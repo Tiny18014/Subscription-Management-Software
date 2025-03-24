@@ -1,0 +1,139 @@
+import express from "express";
+import mongoose from "mongoose";  // ✅ Correct ES module import
+import Customer from "../models/Customer.js";
+import Subscription from "../models/Subscription.js";
+import authMiddleware from "../middleware/authMiddleware.js";
+import Invoice from "../models/Invoice.js";
+
+const router = express.Router();
+// Get all customers with subscription detail
+router.get("/", async (req, res) => {
+    try {
+        const customers = await Customer.find().populate("subscription").lean();
+
+        // Append validityHours from Subscription model
+        const customersWithHours = customers.map(customer => ({
+            ...customer,
+            validityHours: customer.subscription?.validityHours || 0
+        }));
+
+        res.status(200).json({ success: true, customers: customersWithHours });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Error fetching customers", error });
+    }
+});
+
+// Search customers by name or phone
+router.get("/search", async (req, res) => {
+    try {
+        const { query } = req.query;
+        if (!query.trim()) {
+            return res.status(400).json({ success: false, message: "Search query is required" });
+        }
+
+        const customers = await Customer.find({
+            $or: [{ name: { $regex: query, $options: "i" } }, { phone: { $regex: query, $options: "i" } }],
+        }).populate("subscription");
+
+        res.status(200).json({ success: true, customers });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Error searching customers", error });
+    }
+});
+
+
+
+// Add a new customer
+router.post("/", async (req, res) => {
+
+    try {
+        const { name, age, email, phone, subscription } = req.body;
+
+        // Get subscription details
+        const selectedSub = await Subscription.findById(subscription);
+        if (!selectedSub) {
+            return res.status(404).json({ message: "Subscription not found" });
+        }
+
+        // Create customer entry
+        const newCustomer = new Customer({
+            name,
+            age,
+            email,
+            phone,
+            subscription,
+            remainingHours: selectedSub.validityHours,
+        });
+
+        await newCustomer.save();
+
+        // Create invoice entry
+        const newInvoice = new Invoice({
+            customer: newCustomer._id,
+            serviceType: selectedSub.name,  // Subscription plan name
+            hoursUsed: selectedSub.validityHours,  // Total hours from subscription
+            modeOfPayment: "Subscription",
+            paidAmount: selectedSub.price, // Store the subscription price
+            status: "paid",
+        });
+
+        await newInvoice.save();
+
+        res.status(201).json({
+            message: "Customer and invoice added successfully",
+            customer: newCustomer,
+            invoice: newInvoice
+        });
+
+    } catch (error) {
+        console.error("Error adding customer and invoice:", error);
+        res.status(500).json({ message: "Error processing request", error });
+    }
+});
+
+
+
+// Update Customer Info (Admin Only)
+router.put("/update/:id", async (req, res) => {
+    try {
+        const { subscription } = req.body;
+        let updatedFields = req.body;
+
+        if (subscription) {
+            const subscriptionPlan = await Subscription.findById(subscription);
+            if (!subscriptionPlan) return res.status(400).json({ success: false, message: "Invalid subscription plan" });
+            updatedFields.remainingHours = subscriptionPlan.validityHours;
+        }
+
+        const updatedCustomer = await Customer.findByIdAndUpdate(req.params.id, updatedFields, { new: true });
+        res.status(200).json({ success: true, customer: updatedCustomer });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Error updating customer", error });
+    }
+});
+
+// Delete Customer (Admin Only)
+router.delete("/delete/:id", authMiddleware, async (req, res) => {
+    try {
+        await Customer.findByIdAndDelete(req.params.id);
+        res.status(200).json({ success: true, message: "Customer deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Error deleting customer", error });
+    }
+});
+
+// 📌 Get all invoices for a specific customer
+router.get('/:id', async (req, res) => {
+    try {
+        const customer = await Customer.findById(req.params.id);
+        if (!customer) {
+            return res.status(404).json({ message: "Customer not found" });
+        }
+        res.json(customer);
+    } catch (error) {
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+
+export default router;
