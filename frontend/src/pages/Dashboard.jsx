@@ -3,6 +3,7 @@ import { Box, Grid, Heading, Text, Spinner, Center } from "@chakra-ui/react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from "recharts";
 import axios from "axios";
 
+const API_URL = import.meta.env.VITE_BACKEND_URL;
 const AdminDashboard = () => {
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -10,7 +11,7 @@ const AdminDashboard = () => {
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                const response = await fetch("http://localhost:5000/api/dashboard"); // Adjust API route as needed
+                const response = await fetch(`${API_URL}/api/dashboard`); // Adjust API route as needed
                 const data = await response.json();
                 setDashboardData(data);
             } catch (error) {
