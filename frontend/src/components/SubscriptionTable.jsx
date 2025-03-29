@@ -48,7 +48,7 @@ const SubscriptionTable = ({ subscriptions, setSubscriptions }) => {
             }
 
             await axios.put(
-                `http://localhost:5000/api/subscriptions/update/${selectedSubscription._id}`,
+                `${API_URL}/subscriptions/update/${selectedSubscription._id}`,
                 selectedSubscription,
                 {
                     headers: {
