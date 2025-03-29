@@ -9,7 +9,7 @@ const AddMassagePage = () => {
 
 
     });
-
+    const API_URL = import.meta.env.VITE_BACKEND_URL;
     const navigate = useNavigate();
 
     const handleChange = (e) => {
@@ -20,7 +20,7 @@ const AddMassagePage = () => {
         e.preventDefault();
 
         try {
-            const res = await axios.post(`http://localhost:5000/api/massages`, massage, {
+            const res = await axios.post(`${API_URL}/api/massages`, massage, {
                 headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
             });
 

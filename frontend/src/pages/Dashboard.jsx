@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Box, Grid, Heading, Text, Spinner, Center } from "@chakra-ui/react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, Legend } from "recharts";
+import { BarChart, Bar, CartesianGrid } from "recharts";
+
+
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_BACKEND_URL;
 const AdminDashboard = () => {
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -11,7 +14,7 @@ const AdminDashboard = () => {
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                const response = await fetch(`${API_URL}/api/dashboard`); // Adjust API route as needed
+                const response = await fetch("http://localhost:5000/api/dashboard"); // Adjust API route as needed
                 const data = await response.json();
                 setDashboardData(data);
             } catch (error) {
@@ -59,6 +62,25 @@ const AdminDashboard = () => {
             </Box>
 
             <Box mt={8} p={4} shadow="md" borderWidth="1px" borderRadius="md">
+                <Heading size="md" mb={3}>Monthly Revenue & Customer Growth</Heading>
+                <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={dashboardData.monthlyStats}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis
+                            dataKey="month"
+                            tickFormatter={(tick) => ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][tick - 1]}
+                        />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="totalRevenue" fill="#4C51BF" name="Revenue (₹)" />
+                        <Bar dataKey="customerCount" fill="#48BB78" name="New Customers" />
+                    </BarChart>
+                </ResponsiveContainer>
+            </Box>
+
+
+            <Box mt={8} p={4} shadow="md" borderWidth="1px" borderRadius="md">
                 <Heading size="md" mb={3}>Top Subscriptions</Heading>
                 <div style={{ overflowX: "auto" }}>
                     <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -78,6 +100,28 @@ const AdminDashboard = () => {
                         </tbody>
                     </table>
                 </div>
+            </Box>
+            <Box mt={8} p={4} shadow="md" borderWidth="1px" borderRadius="md">
+                <Heading size="md" mb={3}>Customer Subscription Distribution</Heading>
+                <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                        <Pie
+                            data={dashboardData.subscriptionDistribution}
+                            dataKey="count"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={100}
+                            fill="#8884d8"
+                            label
+                        >
+                            {dashboardData.subscriptionDistribution.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#A28DFC"][index % 5]} />
+                            ))}
+                        </Pie>
+                        <Legend />
+                    </PieChart>
+                </ResponsiveContainer>
             </Box>
 
             {/* Most Popular Massages Table */}

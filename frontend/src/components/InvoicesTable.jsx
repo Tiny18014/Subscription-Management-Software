@@ -5,7 +5,7 @@ import axios from "axios";
 const InvoicesTable = ({ invoices, setInvoices }) => {
     const [selectedInvoice, setSelectedInvoice] = useState(null);
     const [isOpen, setIsOpen] = useState(false);
-
+    const API_URL = import.meta.env.VITE_BACKEND_URL;
     // Delete invoice
     const deleteInvoice = async (id) => {
         try {
@@ -15,7 +15,7 @@ const InvoicesTable = ({ invoices, setInvoices }) => {
                 return;
             }
 
-            await axios.delete(`http://localhost:5000/api/invoices/${id}`, {
+            await axios.delete(`${API_URL}/api/invoices/${id}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
@@ -47,7 +47,7 @@ const InvoicesTable = ({ invoices, setInvoices }) => {
             }
 
             await axios.put(
-                `http://localhost:5000/api/invoices/update/${selectedInvoice._id}`,
+                `${API_URL}/api/invoices/update/${selectedInvoice._id}`,
                 selectedInvoice,
                 {
                     headers: { Authorization: `Bearer ${token}` },
@@ -82,7 +82,7 @@ const InvoicesTable = ({ invoices, setInvoices }) => {
                     {invoices.map((inv) => (
                         <Table.Row key={inv._id}>
                             <Table.Cell>{inv._id}</Table.Cell>
-                            <Table.Cell>{inv.customer?.name} ({inv.customer?.phone})</Table.Cell>
+                            <Table.Cell>{inv.customer?.name} </Table.Cell>
                             <Table.Cell>{inv.paidAmount}</Table.Cell>
                             <Table.Cell>{new Date(inv.serviceDate).toLocaleDateString()}</Table.Cell>
                             <Table.Cell>{inv.modeOfPayment}</Table.Cell>

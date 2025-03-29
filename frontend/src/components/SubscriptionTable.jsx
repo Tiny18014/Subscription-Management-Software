@@ -5,6 +5,7 @@ import axios from "axios";
 const SubscriptionTable = ({ subscriptions, setSubscriptions }) => {
     const [selectedSubscription, setSelectedSubscription] = useState(null);
     const [isOpen, setIsOpen] = useState(false);
+    const API_URL = import.meta.env.VITE_BACKEND_URL;
     const deleteSubscription = async (id) => {
         try {
             const token = localStorage.getItem("token"); // Retrieve token
@@ -14,7 +15,7 @@ const SubscriptionTable = ({ subscriptions, setSubscriptions }) => {
                 return;
             }
 
-            await axios.delete(`http://localhost:5000/api/subscriptions/delete/${id}`, {
+            await axios.delete(`${API_URL}/api/subscriptions/delete/${id}`, {
                 headers: {
                     Authorization: `Bearer ${token}`, // Add token to request
                 },

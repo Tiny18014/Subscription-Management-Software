@@ -12,16 +12,16 @@ const MassagesEmployee = () => {
     const location = useLocation();
     const newMassage = location.state?.newMassage;
     const debouncedSearch = useDebounce(searchQuery, 500);
-
+    const API_URL = import.meta.env.VITE_BACKEND_URL;
     // Function to fetch massages
     const fetchMassages = async () => {
         try {
             setLoading(true);
             setError(null);
-            let url = `http://localhost:5000/api/massages`;
+            let url = `${API_URL}/api/massages`;
 
             if (debouncedSearch.trim()) {
-                url = `http://localhost:5000/api/massages/search?query=${encodeURIComponent(debouncedSearch)}`;
+                url = `${API_URL}/api/massages/search?query=${encodeURIComponent(debouncedSearch)}`;
             }
 
             console.log("Fetching from URL:", url); // ✅ Debugging URL

@@ -7,7 +7,7 @@ const invoiceSchema = new mongoose.Schema({
     serviceDate: { type: Date, default: Date.now },
     modeOfPayment: { type: String, required: false, enum: ["Cash", "Card", "UPI", "Subscription"] },
     paidAmount: { type: Number, default: 0 },
-    status: { type: String, enum: ['paid', 'pending'], required: true },
+    status: { type: String, enum: ['paid', 'pending', 'Paid'], required: true },
 }, { timestamps: true });
 
 const Invoice = mongoose.model("Invoice", invoiceSchema);

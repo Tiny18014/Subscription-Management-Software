@@ -5,7 +5,7 @@ import axios from "axios";
 const MassageTable = ({ massages, setMassages }) => {
     const [selectedMassage, setSelectedMassage] = useState(null);
     const [isOpen, setIsOpen] = useState(false);
-
+    const API_URL = import.meta.env.VITE_BACKEND_URL;
     const deleteMassage = async (id) => {
         try {
             const token = localStorage.getItem("token"); // Retrieve token
@@ -15,7 +15,7 @@ const MassageTable = ({ massages, setMassages }) => {
                 return;
             }
 
-            await axios.delete(`http://localhost:5000/api/massages/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+            await axios.delete(`${API_URL}/api/massages/${id}`, { headers: { Authorization: `Bearer ${token}` } });
 
 
             setMassages((prev) => prev.filter((massage) => massage._id !== id));

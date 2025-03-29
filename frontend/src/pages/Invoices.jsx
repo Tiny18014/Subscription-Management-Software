@@ -16,14 +16,14 @@ const Invoices = () => {
     const location = useLocation();
     const newInvoice = location.state?.newInvoice;
     const debouncedSearch = useDebounce(searchQuery, 500);
-
+    const API_URL = import.meta.env.VITE_BACKEND_URL;
     const fetchInvoices = async () => {
         try {
             setLoading(true);
-            let url = `http://localhost:5000/api/invoices`;
+            let url = `${API_URL}/api/invoices`;
 
             if (debouncedSearch.trim()) {
-                url = `http://localhost:5000/api/invoices/search?query=${encodeURIComponent(debouncedSearch)}`;
+                url = `${API_URL}/api/invoices/search?query=${encodeURIComponent(debouncedSearch)}`;
             }
 
             const response = await fetch(url, {
@@ -81,7 +81,7 @@ const Invoices = () => {
                         if (!customerId) throw new Error("Invalid customer ID");
 
                         // Fetch customer details
-                        const response = await axios.get(`http://localhost:5000/api/customers/${customerId}`);
+                        const response = await axios.get(`${API_URL}/api/customers/${customerId}`);
                         const customerData = response.data; // Axios automatically parses JSON
 
                         return {

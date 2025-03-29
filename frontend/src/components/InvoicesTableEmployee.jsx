@@ -5,7 +5,6 @@ import axios from "axios";
 const InvoicesTableEmployee = ({ invoices }) => {
 
 
-
     return (
         <Box>
             <Table.Root size="sm" striped>
@@ -13,7 +12,6 @@ const InvoicesTableEmployee = ({ invoices }) => {
                     <Table.Row>
                         <Table.ColumnHeader>Invoice ID</Table.ColumnHeader>
                         <Table.ColumnHeader>Customer Info</Table.ColumnHeader>
-
                         <Table.ColumnHeader>Net Payment</Table.ColumnHeader>
                         <Table.ColumnHeader>Created At</Table.ColumnHeader>
                         <Table.ColumnHeader>Mode of Payment</Table.ColumnHeader>
@@ -22,10 +20,12 @@ const InvoicesTableEmployee = ({ invoices }) => {
                     </Table.Row>
                 </Table.Header>
                 <Table.Body>
+
                     {invoices.map((inv) => (
+
                         <Table.Row key={inv._id}>
                             <Table.Cell>{inv._id}</Table.Cell>
-                            <Table.Cell>{inv.customer?.name} ({inv.customer?.phone})</Table.Cell>
+                            <Table.Cell>{inv.customer?.name} </Table.Cell>
                             <Table.Cell>{inv.paidAmount}</Table.Cell>
                             <Table.Cell>{new Date(inv.serviceDate).toLocaleDateString()}</Table.Cell>
                             <Table.Cell>{inv.modeOfPayment}</Table.Cell>

@@ -14,9 +14,9 @@ const AddCustomerPage = () => {
 
     const navigate = useNavigate();
     const [subscriptions, setSubscriptions] = useState([]);
-
+    const API_URL = import.meta.env.VITE_BACKEND_URL;
     useEffect(() => {
-        axios.get("http://localhost:5000/api/subscriptions")
+        axios.get(`${API_URL}/api/subscriptions`)
             .then((response) => {
                 console.log("API Response:", response.data);
                 if (response.data && Array.isArray(response.data)) {
@@ -45,7 +45,7 @@ const AddCustomerPage = () => {
         console.log("Submitting payload:", payload);
 
         try {
-            const response = await axios.post("http://localhost:5000/api/customers", payload);
+            const response = await axios.post(`${API_URL}/api/customers`, payload);
             console.log("Customer added successfully:", response.data);
             navigate("/customers");
         } catch (error) {

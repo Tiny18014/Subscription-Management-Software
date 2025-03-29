@@ -13,12 +13,12 @@ const AddCustomerPageEmployee = () => {
         subscription: "",
         remainingHours: 0, // Added remainingHours field
     });
-
+    const API_URL = import.meta.env.VITE_BACKEND_URL;
     const navigate = useNavigate();
     const [subscriptions, setSubscriptions] = useState([]); // Store fetched subscriptions
 
     useEffect(() => {
-        axios.get("http://localhost:5000/api/subscriptions")
+        axios.get(`${API_URL}/api/subscriptions`)
             .then((response) => {
                 console.log("Fetched Subscriptions:", response.data.subscriptions); // Debugging
                 setSubscriptions(response.data.subscriptions);
@@ -51,7 +51,7 @@ const AddCustomerPageEmployee = () => {
         e.preventDefault();
         try {
             // Add customer
-            const customerResponse = await axios.post("http://localhost:5000/api/customers", customer);
+            const customerResponse = await axios.post(`${API_URL}/api/customers`, customer);
             const customerData = customerResponse.data.customer;
 
             // Navigate after successful customer creation

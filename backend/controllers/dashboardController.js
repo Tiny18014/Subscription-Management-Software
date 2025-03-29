@@ -67,8 +67,12 @@ export const getAdminDashboard = async (req, res) => {
             }
         ]);
 
-        // **Popular Massages Based on Bookings**
         const popularMassages = await Invoice.aggregate([
+            {
+                $match: {
+                    serviceType: { $not: /Plan/i } // Excludes any serviceType containing "Plan" (case-insensitive)
+                }
+            },
             {
                 $group: {
                     _id: "$serviceType",
@@ -79,6 +83,51 @@ export const getAdminDashboard = async (req, res) => {
             { $limit: 5 }
         ]);
 
+        const subscriptionDistribution = await Customer.aggregate([
+            { $match: { subscription: { $exists: true, $ne: null } } },
+            {
+                $group: {
+                    _id: "$subscription",
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $lookup: {
+                    from: "subscriptions",
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "subscriptionDetails"
+                }
+            },
+            { $unwind: "$subscriptionDetails" },
+            {
+                $project: {
+                    name: "$subscriptionDetails.name",
+                    count: 1
+                }
+            }
+        ]);
+
+        const monthlyStats = await Invoice.aggregate([
+            {
+                $match: { serviceDate: { $exists: true, $ne: null } } // Ensure serviceDate exists
+            },
+            {
+                $group: {
+                    _id: { $month: "$serviceDate" },
+                    totalRevenue: { $sum: "$paidAmount" },
+                    customers: { $addToSet: "$customer" }
+                }
+            },
+            {
+                $project: {
+                    month: "$_id",
+                    totalRevenue: 1,
+                    customerCount: { $size: "$customers" }
+                }
+            },
+            { $sort: { month: 1 } }
+        ]);
         res.json({
             totalCustomers,
             activeSubscriptions,
@@ -86,7 +135,9 @@ export const getAdminDashboard = async (req, res) => {
             totalRevenue,
             revenueTrend,
             topSubscriptions,
-            popularMassages: popularMassages.map(massage => ({ name: massage._id, bookings: massage.bookings }))
+            popularMassages: popularMassages.map(massage => ({ name: massage._id, bookings: massage.bookings })),
+            subscriptionDistribution,
+            monthlyStats
         });
 
     } catch (error) {

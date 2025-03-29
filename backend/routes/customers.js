@@ -135,5 +135,52 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+router.put("/renew/:customerId", async (req, res) => {
+    try {
+        const { customerId } = req.params; // Extract from URL
+        const { subscriptionId } = req.body; // Extract from body
+
+        console.log("Incoming Request:", { customerId, subscriptionId }); // Debugging
+
+        const customer = await Customer.findById(customerId);
+        const subscription = await Subscription.findById(subscriptionId);
+
+        if (!customer) {
+            console.log("Customer not found in DB"); // Debugging
+            return res.status(404).json({ success: false, message: "Customer not found" });
+        }
+
+        if (!subscription) {
+            console.log("Subscription not found in DB"); // Debugging
+            return res.status(404).json({ success: false, message: "Subscription not found" });
+        }
+
+        // Update customer's subscription and reset remaining hours
+        customer.subscription = subscriptionId;
+        customer.remainingHours = subscription.validityHours;
+        customer.status = "Active";
+        await customer.save();
+
+        // Create a new invoice for the renewal
+        const invoice = new Invoice({
+            customer: customerId,
+            serviceType: subscription.name,
+            hoursUsed: subscription.validityHours,
+            modeOfPayment: "Subscription",
+            paidAmount: subscription.price,
+            status: "Paid",
+            serviceDate: new Date(),
+        });
+
+        await invoice.save();
+
+        res.status(200).json({ success: true, message: "Subscription renewed and invoice generated", invoice });
+    } catch (error) {
+        console.error("Error:", error);
+        res.status(500).json({ success: false, message: "Server error", error: error.message });
+    }
+});
+
+
 
 export default router;

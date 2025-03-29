@@ -12,16 +12,16 @@ const SubscriptionsEmployee = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const newSubscription = location.state?.newSubscription; // Received new subscription data
-
+    const API_URL = import.meta.env.VITE_BACKEND_URL;
     const debouncedSearch = useDebounce(searchQuery, 500); // Debounce API calls
     // Function to fetch subscriptions
     const fetchSubscriptions = async () => {
         try {
             setLoading(true);
-            let url = `http://localhost:5000/api/subscriptions`;
+            let url = `${API_URL}/api/subscriptions`;
 
             if (debouncedSearch.trim()) {
-                url = `http://localhost:5000/api/subscriptions/search?query=${encodeURIComponent(debouncedSearch)}`;
+                url = `${API_URL}/api/subscriptions/search?query=${encodeURIComponent(debouncedSearch)}`;
             }
 
             const response = await fetch(url);

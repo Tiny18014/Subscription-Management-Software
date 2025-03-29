@@ -10,7 +10,7 @@ const AddSubscriptionPage = () => {
     });
 
     const navigate = useNavigate();
-
+    const API_URL = import.meta.env.VITE_BACKEND_URL;
     const handleChange = (e) => {
         setSubscription({ ...subscription, [e.target.name]: e.target.value });
     };
@@ -19,7 +19,7 @@ const AddSubscriptionPage = () => {
         e.preventDefault();
 
         try {
-            const res = await axios.post(`http://localhost:5000/api/subscriptions/add`, subscription, {
+            const res = await axios.post(`${API_URL}/api/subscriptions/add`, subscription, {
                 headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
             });
 

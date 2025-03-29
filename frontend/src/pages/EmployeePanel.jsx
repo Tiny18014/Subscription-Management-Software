@@ -16,24 +16,24 @@ export default function CustomerPanel() {
     const [massages, setMassages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
+    const [isRenewModalOpen, setIsRenewModalOpen] = useState(false);
+    const [selectedSubscription, setSelectedSubscription] = useState("");
+    const [subscriptions, setSubscriptions] = useState([]);
+    const [renewCustomer, setRenewCustomer] = useState(null);
     const debouncedSearch = useDebounce(searchQuery, 500);
     const navigate = useNavigate();
     const location = useLocation();
     const newCustomer = location.state?.newCustomer;
+    const API_URL = import.meta.env.VITE_BACKEND_URL;
 
-    useEffect(() => {
-        fetchCustomers();
-        fetchMassages();
-    }, [debouncedSearch]);
 
     const fetchCustomers = async () => {
         try {
             setLoading(true);
-            let url = `http://localhost:5000/api/customers`;
+            let url = `${API_URL}/api/customers`;
 
             if (debouncedSearch.trim()) {
-                url = `http://localhost:5000/api/customers/search?query=${encodeURIComponent(debouncedSearch)}`;
+                url = `${API_URL}/api/customers/search?query=${encodeURIComponent(debouncedSearch)}`;
             }
 
             const response = await axios.get(url);
@@ -47,12 +47,29 @@ export default function CustomerPanel() {
 
     const fetchMassages = async () => {
         try {
-            const response = await axios.get("http://localhost:5000/api/massages");
+            const response = await axios.get(`${API_URL}/api/massages`);
             setMassages(response.data || []);
         } catch (error) {
             console.error("Error fetching massages:", error);
         }
     };
+
+    const fetchSubscriptions = async () => {
+        try {
+            const response = await axios.get(`${API_URL}/api/subscriptions`);
+            console.log("Fetched Subscriptions:", response.data); // Debugging line
+            setSubscriptions(response.data.subscriptions || []); // Extract subscriptions array
+        } catch (error) {
+            console.error("Error fetching subscriptions:", error);
+        }
+    };
+
+
+    useEffect(() => {
+        fetchCustomers();
+        fetchMassages();
+        fetchSubscriptions();
+    }, [debouncedSearch]);
 
     useEffect(() => {
         if (newCustomer) {
@@ -71,6 +88,17 @@ export default function CustomerPanel() {
         setIsOpen(false);
     };
 
+    const openRenewModal = (customer) => {
+        setRenewCustomer(customer);
+        setIsRenewModalOpen(true);
+    };
+
+    const closeRenewModal = () => {
+        setRenewCustomer(null);
+        setSelectedSubscription("");
+        setIsRenewModalOpen(false);
+    };
+
     const handleUseSubscription = async () => {
         const hours = parseFloat(usedHours);
 
@@ -84,15 +112,19 @@ export default function CustomerPanel() {
             }
 
             try {
-                await axios.put(`http://localhost:5000/api/customers/update/${selectedCustomer._id}`, {
-                    remainingHours: Math.max(0, selectedCustomer.remainingHours - hours),
+                const newRemainingHours = Math.max(0, selectedCustomer.remainingHours - hours);
+                const newStatus = newRemainingHours === 0 ? "Inactive" : selectedCustomer.status;
+
+                await axios.put(`${API_URL}/api/customers/update/${selectedCustomer._id}`, {
+                    remainingHours: newRemainingHours,
+                    status: newStatus, // Update status if hours reach 0
                 });
 
                 const serviceDate = new Date().toISOString();
                 const selectedService = massages.find((m) => m._id === serviceType);
                 const serviceName = selectedService ? selectedService.name : "Unknown Service";
 
-                await axios.post("http://localhost:5000/api/invoices/add", {
+                await axios.post(`${API_URL}/api/invoices/add`, {
                     customer: selectedCustomer._id,
                     serviceType: serviceName,
                     hoursUsed: hours,
@@ -114,8 +146,31 @@ export default function CustomerPanel() {
         }
     };
 
+    const handleRenewSubscription = async () => {
+        if (!selectedSubscription || !renewCustomer) {
+            toaster.create({
+                description: "Please select a subscription",
+                type: "error",
+            });
+            return;
+        }
 
+        try {
+            await axios.put(`${API_URL}/api/customers/renew/${renewCustomer._id}`, {
+                subscriptionId: selectedSubscription, // Send only subscriptionId in body
+            });
 
+            fetchCustomers(); // Refresh the customer list after renewal
+            toaster.create({
+                description: "Subscription renewed successfully",
+                type: "success",
+            });
+
+            closeRenewModal();
+        } catch (error) {
+            console.error("Error renewing subscription:", error);
+        }
+    };
 
 
     return (
@@ -177,7 +232,17 @@ export default function CustomerPanel() {
                                 >
                                     Use
                                 </Button>
-
+                                <Button
+                                    bg="#28A745" // Green color for renew button
+                                    color="#FFFFFF"
+                                    _hover={{ bg: "#218838" }}
+                                    marginLeft="10px"
+                                    paddingX="15px"
+                                    fontWeight="bold"
+                                    onClick={() => openRenewModal(customer)}
+                                >
+                                    Renew
+                                </Button>
 
                             </Table.Cell>
                         </Table.Row>
@@ -304,6 +369,102 @@ export default function CustomerPanel() {
                     </div>
                 </>
             )}
+            {isRenewModalOpen && (
+                <>
+                    <div
+                        style={{
+                            position: "fixed",
+                            top: 0,
+                            left: 0,
+                            width: "100%",
+                            height: "100%",
+                            backgroundColor: "rgba(0, 0, 0, 0.4)",
+                            zIndex: 999,
+                        }}
+                        onClick={closeRenewModal}
+                    />
+                    <div
+                        style={{
+                            position: "fixed",
+                            top: "50%",
+                            left: "50%",
+                            transform: "translate(-50%, -50%)",
+                            backgroundColor: "#fff",
+                            padding: "24px",
+                            borderRadius: "12px",
+                            boxShadow: "0 6px 16px rgba(0, 0, 0, 0.2)",
+                            width: "90%",
+                            maxWidth: "400px",
+                            zIndex: 1000,
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "12px",
+                        }}
+                    >
+                        <h2 style={{ marginBottom: "8px", textAlign: "center" }}>Renew Subscription</h2>
+
+                        <p><strong>Customer:</strong> {renewCustomer?.name}</p>
+
+                        <select
+                            value={selectedSubscription}
+                            onChange={(e) => setSelectedSubscription(e.target.value)}
+                            style={{
+                                padding: "8px",
+                                border: "1px solid #ccc",
+                                borderRadius: "6px",
+                                width: "100%",
+                                fontSize: "16px",
+                            }}
+                        >
+                            <option value="">Select Subscription</option>
+                            {subscriptions.length > 0 &&
+                                subscriptions.map((sub) => (
+                                    <option key={sub._id} value={sub._id}>
+                                        {sub.name} - {sub.validityHours} hours
+                                    </option>
+                                ))}
+                        </select>
+
+
+
+                        <div style={{ display: "flex", justifyContent: "space-between", marginTop: "12px" }}>
+                            <button
+                                onClick={handleRenewSubscription}
+                                style={{
+                                    backgroundColor: "#4CAF50",
+                                    color: "white",
+                                    padding: "10px",
+                                    borderRadius: "6px",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    flex: 1,
+                                    marginRight: "8px",
+                                    opacity: selectedSubscription ? 1 : 0.6,
+                                }}
+                                disabled={!selectedSubscription}
+                            >
+                                Confirm
+                            </button>
+
+                            <button
+                                onClick={closeRenewModal}
+                                style={{
+                                    backgroundColor: "#f44336",
+                                    color: "white",
+                                    padding: "10px",
+                                    borderRadius: "6px",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    flex: 1,
+                                }}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </>
+            )}
+
 
         </Box>
     );

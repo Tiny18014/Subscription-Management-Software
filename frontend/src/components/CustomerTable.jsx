@@ -6,7 +6,7 @@ import axios from "axios";
 const CustomerTable = ({ customers, setCustomers }) => {
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [isOpen, setIsOpen] = useState(false);
-
+    const API_URL = import.meta.env.VITE_BACKEND_URL;
 
 
     const deleteCustomer = async (id) => {
@@ -17,7 +17,7 @@ const CustomerTable = ({ customers, setCustomers }) => {
                 return;
             }
 
-            await axios.delete(`http://localhost:5000/api/customers/delete/${id}`, {
+            await axios.delete(`${API_URL}/api/customers/delete/${id}`, {
                 headers: {
                     Authorization: `Bearer ${token}`, // Send token in Authorization header
                 },
@@ -49,7 +49,7 @@ const CustomerTable = ({ customers, setCustomers }) => {
             }
 
             await axios.put(
-                `http://localhost:5000/api/customers/update/${selectedCustomer._id}`,
+                `${API_URL}/api/customers/update/${selectedCustomer._id}`,
                 selectedCustomer,
                 {
                     headers: {
