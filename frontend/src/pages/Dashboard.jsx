@@ -15,7 +15,7 @@ const AdminDashboard = () => {
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                const response = await fetch(`https://subscription-management-software-1.onrender.com/api/dashboard`); // Adjust API route as needed
+                const response = await fetch(`https://subscription-management-software.onrender.com/api/dashboard`); // Adjust API route as needed
                 const data = await response.json();
                 setDashboardData(data);
             } catch (error) {
