@@ -11,29 +11,19 @@ const InvoicesEmployee = () => {
     const [invoices, setInvoices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [exporting, setExporting] = useState(false);
+
     const navigate = useNavigate();
     const location = useLocation();
     const newInvoice = location.state?.newInvoice;
     const debouncedSearch = useDebounce(searchQuery, 500);
-
+    const API_URL = import.meta.env.VITE_BACKEND_URL;
+    console.log("Backend URL:", API_URL); // Debugging
     const fetchInvoices = async () => {
         try {
-            setLoading(true);
-            let url = `http://localhost:5000/api/invoices`;
+            let url = `${API_URL}/api/invoices`;
+            console.log("Fetching from:", url);
 
-            if (debouncedSearch.trim()) {
-                url = `http://localhost:5000/api/invoices/search?query=${encodeURIComponent(debouncedSearch)}`;
-            }
-
-            const response = await fetch(url, {
-                method: "GET",
-                headers: {
-                    "Cache-Control": "no-cache, no-store, must-revalidate",
-                    "Pragma": "no-cache",
-                    "Expires": "0",
-                },
-            });
+            const response = await fetch(url, { method: "GET" });
 
             if (!response.ok) {
                 const errorData = await response.json();
@@ -41,20 +31,25 @@ const InvoicesEmployee = () => {
             }
 
             const data = await response.json();
-            console.log("✅ Fetched Invoices:", data.invoices);
+            console.log("✅ Invoices Fetched:", data); // Debugging
 
             setInvoices(data.invoices || []);
+            console.log("Updated Invoices State:", invoices); // Check if state is updated
         } catch (err) {
-            console.error("❌ Error fetching invoices:", err.message);
+            console.error("❌ Fetch Error:", err.message);
             setError(err.message);
         } finally {
             setLoading(false);
         }
     };
 
+
     useEffect(() => {
         fetchInvoices();
     }, [debouncedSearch]);
+    useEffect(() => {
+        console.log("Rendering Table with Invoices:", invoices);
+    }, [invoices]);
 
     useEffect(() => {
         if (newInvoice) {
@@ -83,15 +78,14 @@ const InvoicesEmployee = () => {
             {loading && <Spinner size="xl" mt={5} />}
             {error && <Text color="red.500">{error}</Text>}
 
-            {!loading && !error && (
+            {!loading && !error && invoices.length > 0 ? (
                 <Box p={3} borderRadius="md">
-                    {invoices.length > 0 ? (
-                        <InvoicesTableEmployee invoices={invoices} />
-                    ) : (
-                        <Text>No invoices found</Text>
-                    )}
+                    <InvoicesTableEmployee invoices={invoices} />
                 </Box>
+            ) : (
+                !loading && <Text>No invoices found</Text>
             )}
+
         </Box>
     );
 };
