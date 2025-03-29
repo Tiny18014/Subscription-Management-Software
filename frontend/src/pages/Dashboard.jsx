@@ -10,11 +10,12 @@ import axios from "axios";
 const AdminDashboard = () => {
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const API_URL = import.meta.env.VITE_BACKEND_URL;
 
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                const response = await fetch("http://localhost:5000/api/dashboard"); // Adjust API route as needed
+                const response = await fetch(`https://subscription-management-software-1.onrender.com/api/dashboard`); // Adjust API route as needed
                 const data = await response.json();
                 setDashboardData(data);
             } catch (error) {
