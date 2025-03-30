@@ -51,20 +51,37 @@ export default function CustomerPanel() {
     const fetchMassages = async () => {
         try {
             const response = await axios.get(`${API_URL}/api/massages`);
+            console.log("Fetched Massages:", response.data); // Debugging line
 
+            // Fix: Check if response.data is an array directly or has a massages property
+            if (Array.isArray(response.data)) {
+                setMassages(response.data);
+            } else {
+                setMassages(response.data.massages || []);
+            }
         } catch (error) {
             console.error("Error fetching massages:", error);
+            setMassages([]); // Ensure massages is at least an empty array on error
         }
     };
+
+
 
     const fetchSubscriptions = async () => {
         try {
             const response = await axios.get(`${API_URL}/api/subscriptions`);
 
             console.log("Fetched Subscriptions:", response.data); // Debugging line
-            setSubscriptions(response.data.subscriptions || []); // Extract subscriptions array
+
+            // Fix: Handle both array and object with subscriptions property
+            if (Array.isArray(response.data)) {
+                setSubscriptions(response.data);
+            } else {
+                setSubscriptions(response.data.subscriptions || []);
+            }
         } catch (error) {
             console.error("Error fetching subscriptions:", error);
+            setSubscriptions([]); // Ensure subscriptions is at least an empty array on error
         }
     };
 
@@ -76,24 +93,36 @@ export default function CustomerPanel() {
     }, [debouncedSearch]);
 
     useEffect(() => {
-        if (newCustomer) {
-            setCustomers((prev) => [...prev, newCustomer]);
+        if (newCustomer && !customers.some(c => c._id === newCustomer._id)) {
+            setCustomers(prev => [...prev, newCustomer]);
         }
-    }, [newCustomer]);
+    }, [newCustomer, customers]);
 
-    const openModal = (customer) => {
-        setSelectedCustomer(customer);
-        setIsOpen(true);
+
+    const openModal = async (customer) => {
+        try {
+            await fetchMassages(); // Fetch massages again before opening modal
+            setSelectedCustomer(customer);
+            setServiceType(""); // Reset service type when opening modal
+            setUsedHours(""); // Reset used hours when opening modal
+            setIsOpen(true);
+        } catch (error) {
+            console.error("Error opening modal:", error);
+        }
     };
+
+
 
     const closeModal = () => {
         setSelectedCustomer(null);
         setUsedHours("");
+        setServiceType("");
         setIsOpen(false);
     };
 
     const openRenewModal = (customer) => {
         setRenewCustomer(customer);
+        setSelectedSubscription("");
         setIsRenewModalOpen(true);
     };
 
@@ -107,13 +136,14 @@ export default function CustomerPanel() {
         const hours = parseFloat(usedHours);
 
         if (!isNaN(hours) && hours > 0 && selectedCustomer && serviceType) {
-            if (selectedCustomer.remainingHours <= 0) {
+            if (selectedCustomer.remainingHours <= 0 || hours > selectedCustomer.remainingHours) {
                 toaster.create({
-                    description: "Subscription has expired. Customer cannot use the service.",
+                    description: "Not enough hours remaining in the subscription.",
                     type: "error",
                 });
-                return; // Stop execution if subscription has expired
+                return;
             }
+
 
             try {
                 const newRemainingHours = Math.max(0, selectedCustomer.remainingHours - hours);
@@ -192,8 +222,6 @@ export default function CustomerPanel() {
     // Function to determine status color
     const getStatusColor = (status) => {
         switch (status.toLowerCase()) {
-            case 'Active':
-                return "green.500";
             case 'active':
                 return "green.500";
             default:
@@ -235,7 +263,7 @@ export default function CustomerPanel() {
                             <Table.ColumnHeader>Subscription</Table.ColumnHeader>
                             <Table.ColumnHeader>Created At</Table.ColumnHeader>
                             <Table.ColumnHeader>Hours Remaining</Table.ColumnHeader>
-                            <Table.ColumnHeader>Staus</Table.ColumnHeader>
+                            <Table.ColumnHeader>Status</Table.ColumnHeader>
                             <Table.ColumnHeader>Actions</Table.ColumnHeader>
 
                         </Table.Row>
@@ -304,6 +332,7 @@ export default function CustomerPanel() {
                 </Table.Root>
             </Box>
             {isOpen && (
+
                 <>
                     {/* Overlay to darken backgroun */}
                     <div
@@ -342,6 +371,7 @@ export default function CustomerPanel() {
 
                         <p><strong>Customer:</strong> {selectedCustomer?.name}</p>
                         <p><strong>Subscription:</strong> {selectedCustomer?.subscription?.name}</p>
+                        <p><strong>Hours Remaining:</strong> {selectedCustomer?.remainingHours}</p>
 
                         <select
                             value={serviceType}
@@ -356,21 +386,15 @@ export default function CustomerPanel() {
                         >
                             <option value="">Select Service</option>
                             {massages.length > 0 ? (
-                                massages
-                                    .filter(sub => sub.status.toLowerCase() === "active") // Filter only active massages
-                                    .map((sub, index) => (
-                                        <option key={sub._id || `massage-${index}`} value={sub._id}>
-                                            {sub.name}
-                                        </option>
-                                    ))
+                                massages.map((massage) => (
+                                    <option key={massage._id} value={massage._id}>
+                                        {massage.name}
+                                    </option>
+                                ))
                             ) : (
-                                <option key="no-services" disabled>No services available</option>
+                                <option disabled>No Massages Available</option>
                             )}
-
                         </select>
-
-
-
 
                         <input
                             type="number"
@@ -378,7 +402,7 @@ export default function CustomerPanel() {
                             onChange={(e) => setUsedHours(e.target.value)}
                             placeholder="Hours Used"
                             min="1"
-                            max={selectedCustomer?.hoursLeft}
+                            max={selectedCustomer?.remainingHours}
                             style={{
                                 padding: "8px",
                                 border: "1px solid #ccc",
@@ -400,9 +424,9 @@ export default function CustomerPanel() {
                                     cursor: "pointer",
                                     flex: 1,
                                     marginRight: "8px",
-                                    opacity: serviceType && usedHours > 0 && usedHours <= selectedCustomer?.hoursLeft ? 1 : 0.6,
+                                    opacity: serviceType && usedHours > 0 && usedHours <= selectedCustomer?.remainingHours ? 1 : 0.6,
                                 }}
-                                disabled={!serviceType || usedHours <= 0 || usedHours > selectedCustomer?.hoursLeft}
+                                disabled={!serviceType || usedHours <= 0 || usedHours > selectedCustomer?.remainingHours}
                             >
                                 Confirm
                             </button>
@@ -473,12 +497,15 @@ export default function CustomerPanel() {
                             }}
                         >
                             <option value="">Select Subscription</option>
-                            {subscriptions.length > 0 &&
+                            {subscriptions.length > 0 ? (
                                 subscriptions.map((sub) => (
                                     <option key={sub._id} value={sub._id}>
                                         {sub.name} - {sub.validityHours} hours
                                     </option>
-                                ))}
+                                ))
+                            ) : (
+                                <option disabled>No Subscriptions Available</option>
+                            )}
                         </select>
 
 
