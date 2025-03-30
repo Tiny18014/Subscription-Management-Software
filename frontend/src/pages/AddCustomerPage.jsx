@@ -47,7 +47,7 @@ const AddCustomerPage = () => {
         console.log("Submitting payload:", payload);
 
         try {
-            const response = await axios.post("http://localhost:5000/api/customers", payload);
+            const response = await axios.post(`${API_URL}/api/customers`, payload);
             console.log("Customer added successfully:", response.data);
             navigate("/customers");
         } catch (error) {
