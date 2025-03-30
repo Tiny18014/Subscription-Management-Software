@@ -9,9 +9,11 @@ const AdminLogin = () => {
     const [error, setError] = useState("");
     const navigate = useNavigate();
     const API_URL = import.meta.env.VITE_BACKEND_URL;
+
     const handleLogin = async () => {
         try {
             const response = await axios.post(`${API_URL}/api/auth/login`, {
+
                 email,
                 password,
             });

@@ -11,12 +11,14 @@ const AddCustomerPage = () => {
         phoneNumber: "",
         subscription: "", // Ensure this matches the backend field
     });
+    const API_URL = import.meta.env.VITE_BACKEND_URL;
 
     const navigate = useNavigate();
     const [subscriptions, setSubscriptions] = useState([]);
-    const API_URL = import.meta.env.VITE_BACKEND_URL;
+
     useEffect(() => {
         axios.get(`${API_URL}/api/subscriptions`)
+
             .then((response) => {
                 console.log("API Response:", response.data);
                 if (response.data && Array.isArray(response.data)) {
@@ -45,7 +47,7 @@ const AddCustomerPage = () => {
         console.log("Submitting payload:", payload);
 
         try {
-            const response = await axios.post(`${API_URL}/api/customers`, payload);
+            const response = await axios.post("http://localhost:5000/api/customers", payload);
             console.log("Customer added successfully:", response.data);
             navigate("/customers");
         } catch (error) {
@@ -74,11 +76,15 @@ const AddCustomerPage = () => {
                     <Box mb={4}>
                         <select name="subscription" value={customer.subscription} onChange={handleChange} required>
                             <option value="">Select Subscription</option>
-                            {subscriptions.map(sub => (
-                                <option key={sub._id} value={sub._id}>{sub.name}</option>
-                            ))}
+                            {subscriptions
+                                .filter(sub => sub.status.toLowerCase() === "active") // Filter only active subscriptions
+                                .map(sub => (
+                                    <option key={sub._id} value={sub._id}>{sub.name}</option>
+                                ))
+                            }
                         </select>
                     </Box>
+
                     <Button
                         type="submit"
                         width="full"

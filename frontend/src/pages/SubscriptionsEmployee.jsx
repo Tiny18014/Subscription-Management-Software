@@ -13,6 +13,7 @@ const SubscriptionsEmployee = () => {
     const location = useLocation();
     const newSubscription = location.state?.newSubscription; // Received new subscription data
     const API_URL = import.meta.env.VITE_BACKEND_URL;
+
     const debouncedSearch = useDebounce(searchQuery, 500); // Debounce API calls
     // Function to fetch subscriptions
     const fetchSubscriptions = async () => {
@@ -20,8 +21,10 @@ const SubscriptionsEmployee = () => {
             setLoading(true);
             let url = `${API_URL}/api/subscriptions`;
 
+
             if (debouncedSearch.trim()) {
                 url = `${API_URL}/api/subscriptions/search?query=${encodeURIComponent(debouncedSearch)}`;
+
             }
 
             const response = await fetch(url);
@@ -71,7 +74,7 @@ const SubscriptionsEmployee = () => {
 
             {/* Subscription Table */}
             {!loading && !error && (
-                <Box p={3} borderRadius="md">
+                <Box p={3} borderRadius="md" bg="white" shadow="sm">
                     <SubscriptionTableEmployee subscriptions={subscriptions} />
                 </Box>
             )}

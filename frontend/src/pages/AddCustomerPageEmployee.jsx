@@ -14,11 +14,13 @@ const AddCustomerPageEmployee = () => {
         remainingHours: 0, // Added remainingHours field
     });
     const API_URL = import.meta.env.VITE_BACKEND_URL;
+
     const navigate = useNavigate();
     const [subscriptions, setSubscriptions] = useState([]); // Store fetched subscriptions
 
     useEffect(() => {
         axios.get(`${API_URL}/api/subscriptions`)
+
             .then((response) => {
                 console.log("Fetched Subscriptions:", response.data.subscriptions); // Debugging
                 setSubscriptions(response.data.subscriptions);
@@ -52,6 +54,7 @@ const AddCustomerPageEmployee = () => {
         try {
             // Add customer
             const customerResponse = await axios.post(`${API_URL}/api/customers`, customer);
+
             const customerData = customerResponse.data.customer;
 
             // Navigate after successful customer creation
@@ -84,13 +87,15 @@ const AddCustomerPageEmployee = () => {
                     <Box mb={4}>
                         <select name="subscription" value={customer.subscription} onChange={handleChange} required>
                             <option value="">Select Subscription</option>
-                            {subscriptions.map(sub => (
-                                <option key={sub._id} value={sub._id}>
-                                    {sub.name} - {sub.validityHours} hours
-                                </option>
-                            ))}
+                            {subscriptions
+                                .filter(sub => sub.status.toLowerCase() === "active") // Filter only active subscriptions
+                                .map(sub => (
+                                    <option key={sub._id} value={sub._id}>{sub.name}</option>
+                                ))
+                            }
                         </select>
                     </Box>
+
                     <Box mb={4}>
                         <Input type="number" name="remainingHours" value={customer.remainingHours} readOnly placeholder="Remaining Hours" />
 

@@ -14,6 +14,7 @@ const Massages = () => {
     const newMassage = location.state?.newMassage;
     const debouncedSearch = useDebounce(searchQuery, 500);
     const API_URL = import.meta.env.VITE_BACKEND_URL;
+
     // Function to fetch massages
     const fetchMassages = async () => {
 
@@ -21,8 +22,10 @@ const Massages = () => {
             setLoading(true);
             let url = `${API_URL}/api/massages`;
 
+
             if (debouncedSearch.trim()) {
                 url = `${API_URL}/api/massages/search?query=${encodeURIComponent(debouncedSearch)}`;
+
             }
 
 
@@ -97,7 +100,7 @@ const Massages = () => {
 
 
             {!loading && !error && (
-                <Box p={3} borderRadius="md">
+                <Box p={3} borderRadius="md" bg="white" shadow="sm">
                     {massages.length > 0 ? (
                         <>
 

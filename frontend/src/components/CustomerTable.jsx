@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { Table, Button, Box, IconButton } from "@chakra-ui/react";
+import { Table, Button, Box, IconButton, Text } from "@chakra-ui/react";
 
 import axios from "axios";
 
 const CustomerTable = ({ customers, setCustomers }) => {
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [isOpen, setIsOpen] = useState(false);
+
     const API_URL = import.meta.env.VITE_BACKEND_URL;
 
 
@@ -18,6 +19,7 @@ const CustomerTable = ({ customers, setCustomers }) => {
             }
 
             await axios.delete(`${API_URL}/api/customers/delete/${id}`, {
+
                 headers: {
                     Authorization: `Bearer ${token}`, // Send token in Authorization header
                 },
@@ -50,6 +52,7 @@ const CustomerTable = ({ customers, setCustomers }) => {
 
             await axios.put(
                 `${API_URL}/api/customers/update/${selectedCustomer._id}`,
+
                 selectedCustomer,
                 {
                     headers: {
@@ -67,7 +70,27 @@ const CustomerTable = ({ customers, setCustomers }) => {
         }
     };
 
-
+    // Format date with both date and time
+    const formatDateTime = (dateString) => {
+        return new Date(dateString).toLocaleString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+    // Function to determine status color
+    const getStatusColor = (status) => {
+        switch (status.toLowerCase()) {
+            case 'Active':
+                return "green.500";
+            case 'active':
+                return "green.500";
+            default:
+                return "gray.500";
+        }
+    };
     return (
         <Box >
             <Table.Root size="sm" striped >
@@ -77,18 +100,43 @@ const CustomerTable = ({ customers, setCustomers }) => {
                         <Table.ColumnHeader>Name</Table.ColumnHeader>
                         <Table.ColumnHeader>Subscription</Table.ColumnHeader>
                         <Table.ColumnHeader>Created At</Table.ColumnHeader>
+                        <Table.ColumnHeader>Hours Remaining</Table.ColumnHeader>
                         <Table.ColumnHeader>Status</Table.ColumnHeader>
                         <Table.ColumnHeader>Actions</Table.ColumnHeader>
                     </Table.Row>
                 </Table.Header>
                 <Table.Body>
-                    {customers.map((customer) => (
-                        <Table.Row key={customer._id}>
-                            <Table.Cell>{customer._id}</Table.Cell>
-                            <Table.Cell>{customer.name}</Table.Cell>
-                            <Table.Cell>{customer.subscription?.name || "N/A"}</Table.Cell>
-                            <Table.Cell>{new Date(customer.createdAt).toLocaleDateString()}</Table.Cell>
-                            <Table.Cell>{customer.status}</Table.Cell>
+                    {customers.map((customer, index) => (
+                        <Table.Row key={customer._id || `customer-${index}`}>
+
+                            <Table.Cell>
+                                <Text title={`Customer ID: ${customer._id}`}>
+                                    CUS-{customer._id.substring(customer._id.length - 6).toUpperCase()}
+                                </Text>
+                            </Table.Cell>
+                            <Table.Cell>
+                                <Text fontWeight="medium" title={customer.name}>
+                                    {customer?.name || "Unknown Customer"}
+                                </Text>
+                            </Table.Cell>
+                            <Table.Cell>{customer.subscription?.name}</Table.Cell>
+                            <Table.Cell>
+                                <Text title={formatDateTime(customer.createdAt)}>
+                                    {new Date(customer.createdAt).toLocaleDateString()}</Text>
+                            </Table.Cell>
+                            <Table.Cell>{customer.remainingHours}</Table.Cell>
+                            <Table.Cell>
+                                <Box
+                                    px={2}
+                                    py={1}
+                                    borderRadius="md"
+                                    bg={getStatusColor(customer.status)}
+                                    color="white"
+                                    display="inline-block"
+                                >
+                                    {customer.status}
+                                </Box>
+                            </Table.Cell>
                             <Table.Cell>
                                 <button onClick={() => openEditModal(customer)}>
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

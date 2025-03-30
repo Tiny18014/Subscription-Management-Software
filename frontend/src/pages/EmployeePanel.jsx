@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Table, Button, Input, Box, Heading, Flex } from "@chakra-ui/react";
+import { Table, Button, Input, Box, Heading, Flex, Text } from "@chakra-ui/react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toaster } from "@/components/ui/toaster"
 import axios from "axios";
@@ -27,13 +27,16 @@ export default function CustomerPanel() {
     const API_URL = import.meta.env.VITE_BACKEND_URL;
 
 
+
     const fetchCustomers = async () => {
         try {
             setLoading(true);
             let url = `${API_URL}/api/customers`;
 
+
             if (debouncedSearch.trim()) {
                 url = `${API_URL}/api/customers/search?query=${encodeURIComponent(debouncedSearch)}`;
+
             }
 
             const response = await axios.get(url);
@@ -48,7 +51,7 @@ export default function CustomerPanel() {
     const fetchMassages = async () => {
         try {
             const response = await axios.get(`${API_URL}/api/massages`);
-            setMassages(response.data || []);
+
         } catch (error) {
             console.error("Error fetching massages:", error);
         }
@@ -57,6 +60,7 @@ export default function CustomerPanel() {
     const fetchSubscriptions = async () => {
         try {
             const response = await axios.get(`${API_URL}/api/subscriptions`);
+
             console.log("Fetched Subscriptions:", response.data); // Debugging line
             setSubscriptions(response.data.subscriptions || []); // Extract subscriptions array
         } catch (error) {
@@ -116,6 +120,7 @@ export default function CustomerPanel() {
                 const newStatus = newRemainingHours === 0 ? "Inactive" : selectedCustomer.status;
 
                 await axios.put(`${API_URL}/api/customers/update/${selectedCustomer._id}`, {
+
                     remainingHours: newRemainingHours,
                     status: newStatus, // Update status if hours reach 0
                 });
@@ -125,6 +130,7 @@ export default function CustomerPanel() {
                 const serviceName = selectedService ? selectedService.name : "Unknown Service";
 
                 await axios.post(`${API_URL}/api/invoices/add`, {
+
                     customer: selectedCustomer._id,
                     serviceType: serviceName,
                     hoursUsed: hours,
@@ -157,6 +163,7 @@ export default function CustomerPanel() {
 
         try {
             await axios.put(`${API_URL}/api/customers/renew/${renewCustomer._id}`, {
+
                 subscriptionId: selectedSubscription, // Send only subscriptionId in body
             });
 
@@ -172,7 +179,27 @@ export default function CustomerPanel() {
         }
     };
 
-
+    // Format date with both date and time
+    const formatDateTime = (dateString) => {
+        return new Date(dateString).toLocaleString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+    // Function to determine status color
+    const getStatusColor = (status) => {
+        switch (status.toLowerCase()) {
+            case 'Active':
+                return "green.500";
+            case 'active':
+                return "green.500";
+            default:
+                return "gray.500";
+        }
+    };
     return (
         <Box p={5} w="full" pt="60px">
             <Heading size="lg" mb={4}>Customers</Heading>
@@ -199,57 +226,83 @@ export default function CustomerPanel() {
                     </Button>
                 </Flex>
             </Box>
-            <Table.Root size="sm" striped>
-                <Table.Header>
-                    <Table.Row>
-                        <Table.ColumnHeader>ID</Table.ColumnHeader>
-                        <Table.ColumnHeader>Name</Table.ColumnHeader>
-                        <Table.ColumnHeader>Subscription</Table.ColumnHeader>
-                        <Table.ColumnHeader>Created At</Table.ColumnHeader>
-                        <Table.ColumnHeader>Hours Remaining</Table.ColumnHeader>
-                        <Table.ColumnHeader>Actions</Table.ColumnHeader>
+            <Box p={3} borderRadius="md" bg="white" shadow="sm">
+                <Table.Root size="sm" striped>
+                    <Table.Header>
+                        <Table.Row>
+                            <Table.ColumnHeader>ID</Table.ColumnHeader>
+                            <Table.ColumnHeader>Name</Table.ColumnHeader>
+                            <Table.ColumnHeader>Subscription</Table.ColumnHeader>
+                            <Table.ColumnHeader>Created At</Table.ColumnHeader>
+                            <Table.ColumnHeader>Hours Remaining</Table.ColumnHeader>
+                            <Table.ColumnHeader>Staus</Table.ColumnHeader>
+                            <Table.ColumnHeader>Actions</Table.ColumnHeader>
 
-                    </Table.Row>
-                </Table.Header>
-                <Table.Body>
-                    {customers.map((customer, index) => (
-                        <Table.Row key={customer._id || `customer-${index}`}>
-                            <Table.Cell>{customer._id}</Table.Cell>
-                            <Table.Cell>{customer.name}</Table.Cell>
-                            <Table.Cell>{customer.subscription?.name}</Table.Cell>
-                            <Table.Cell>{customer.createdAt}</Table.Cell>
-                            <Table.Cell>{customer.remainingHours}</Table.Cell>
-                            <Table.Cell>
-
-                                <Button
-                                    bg={customer.remainingHours > 0 ? "#007BFF" : "#B0B0B0"} // Greyed out if remainingHours is 0
-                                    color="#FFFFFF"
-                                    _hover={customer.remainingHours > 0 ? { bg: "#0056B3" } : {}}
-                                    paddingX="20px"
-                                    fontWeight="bold"
-                                    onClick={() => openModal(customer)}
-                                    disabled={customer.remainingHours <= 0} // Correct condition
-                                >
-                                    Use
-                                </Button>
-                                <Button
-                                    bg="#28A745" // Green color for renew button
-                                    color="#FFFFFF"
-                                    _hover={{ bg: "#218838" }}
-                                    marginLeft="10px"
-                                    paddingX="15px"
-                                    fontWeight="bold"
-                                    onClick={() => openRenewModal(customer)}
-                                >
-                                    Renew
-                                </Button>
-
-                            </Table.Cell>
                         </Table.Row>
-                    ))}
-                </Table.Body>
-            </Table.Root>
+                    </Table.Header>
+                    <Table.Body>
+                        {customers.map((customer, index) => (
+                            <Table.Row key={customer._id || `customer-${index}`}>
 
+                                <Table.Cell>
+                                    <Text title={`Customer ID: ${customer._id}`}>
+                                        CUS-{customer._id.substring(customer._id.length - 6).toUpperCase()}
+                                    </Text>
+                                </Table.Cell>
+                                <Table.Cell>
+                                    <Text fontWeight="medium" title={customer.name}>
+                                        {customer?.name || "Unknown Customer"}
+                                    </Text>
+                                </Table.Cell>
+                                <Table.Cell>{customer.subscription?.name}</Table.Cell>
+                                <Table.Cell>
+                                    <Text title={formatDateTime(customer.createdAt)}>
+                                        {new Date(customer.createdAt).toLocaleDateString()}</Text>
+                                </Table.Cell>
+                                <Table.Cell>{customer.remainingHours}</Table.Cell>
+                                <Table.Cell>
+                                    <Box
+                                        px={2}
+                                        py={1}
+                                        borderRadius="md"
+                                        bg={getStatusColor(customer.status)}
+                                        color="white"
+                                        display="inline-block"
+                                    >
+                                        {customer.status}
+                                    </Box>
+                                </Table.Cell>
+                                <Table.Cell>
+
+                                    <Button
+                                        bg={customer.remainingHours > 0 ? "#007BFF" : "#B0B0B0"} // Greyed out if remainingHours is 0
+                                        color="#FFFFFF"
+                                        _hover={customer.remainingHours > 0 ? { bg: "#0056B3" } : {}}
+                                        paddingX="20px"
+                                        fontWeight="bold"
+                                        onClick={() => openModal(customer)}
+                                        disabled={customer.remainingHours <= 0} // Correct condition
+                                    >
+                                        Use
+                                    </Button>
+                                    <Button
+                                        bg="#28A745" // Green color for renew button
+                                        color="#FFFFFF"
+                                        _hover={{ bg: "#218838" }}
+                                        marginLeft="10px"
+                                        paddingX="15px"
+                                        fontWeight="bold"
+                                        onClick={() => openRenewModal(customer)}
+                                    >
+                                        Renew
+                                    </Button>
+
+                                </Table.Cell>
+                            </Table.Row>
+                        ))}
+                    </Table.Body>
+                </Table.Root>
+            </Box>
             {isOpen && (
                 <>
                     {/* Overlay to darken backgroun */}
@@ -303,14 +356,17 @@ export default function CustomerPanel() {
                         >
                             <option value="">Select Service</option>
                             {massages.length > 0 ? (
-                                massages.map((sub, index) => (
-                                    <option key={sub._id || `massage-${index}`} value={sub._id}>
-                                        {sub.name}
-                                    </option>
-                                ))
+                                massages
+                                    .filter(sub => sub.status.toLowerCase() === "active") // Filter only active massages
+                                    .map((sub, index) => (
+                                        <option key={sub._id || `massage-${index}`} value={sub._id}>
+                                            {sub.name}
+                                        </option>
+                                    ))
                             ) : (
                                 <option key="no-services" disabled>No services available</option>
                             )}
+
                         </select>
 
 

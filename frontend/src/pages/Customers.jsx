@@ -13,6 +13,7 @@ const Customers = () => {
     const location = useLocation();
     const newCustomer = location.state?.newCustomer; // Received new customer data
     const API_URL = import.meta.env.VITE_BACKEND_URL;
+
     const debouncedSearch = useDebounce(searchQuery, 500); // Debounce API calls
 
     // Function to fetch customers
@@ -21,8 +22,10 @@ const Customers = () => {
             setLoading(true);
             let url = `${API_URL}/api/customers`;
 
+
             if (debouncedSearch.trim()) {
                 url = `${API_URL}/api/customers/search?query=${encodeURIComponent(debouncedSearch)}`;
+
             }
 
             const response = await fetch(url);
@@ -84,7 +87,7 @@ const Customers = () => {
 
             {/* Customer Table */}
             {!loading && !error && (
-                <Box p={3} borderRadius="md" bg="white">
+                <Box p={3} borderRadius="md" bg="white" shadow="sm">
                     <CustomerTable customers={customers} setCustomers={setCustomers} />
                 </Box>
             )}

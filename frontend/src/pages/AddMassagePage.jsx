@@ -9,8 +9,9 @@ const AddMassagePage = () => {
 
 
     });
-    const API_URL = import.meta.env.VITE_BACKEND_URL;
+
     const navigate = useNavigate();
+    const API_URL = import.meta.env.VITE_BACKEND_URL;
 
     const handleChange = (e) => {
         setMassage({ ...massage, [e.target.name]: e.target.value });

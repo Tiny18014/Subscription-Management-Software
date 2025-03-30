@@ -6,6 +6,7 @@ const MassageTable = ({ massages, setMassages }) => {
     const [selectedMassage, setSelectedMassage] = useState(null);
     const [isOpen, setIsOpen] = useState(false);
     const API_URL = import.meta.env.VITE_BACKEND_URL;
+
     const deleteMassage = async (id) => {
         try {
             const token = localStorage.getItem("token"); // Retrieve token
@@ -16,6 +17,7 @@ const MassageTable = ({ massages, setMassages }) => {
             }
 
             await axios.delete(`${API_URL}/api/massages/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+
 
 
             setMassages((prev) => prev.filter((massage) => massage._id !== id));
@@ -64,7 +66,17 @@ const MassageTable = ({ massages, setMassages }) => {
         }
     };
 
-
+    // Function to determine status color
+    const getStatusColor = (status) => {
+        switch (status.toLowerCase()) {
+            case 'Active':
+                return "green.500";
+            case 'active':
+                return "green.500";
+            default:
+                return "gray.500";
+        }
+    };
     return (
         <Box>
             <Table.Root size="sm" striped>
@@ -88,7 +100,18 @@ const MassageTable = ({ massages, setMassages }) => {
 
                             <Table.Cell>{new Date(massage.createdAt).toLocaleDateString()}</Table.Cell>
 
-                            <Table.Cell>{massage.status}</Table.Cell>
+                            <Table.Cell>
+                                <Box
+                                    px={2}
+                                    py={1}
+                                    borderRadius="md"
+                                    bg={getStatusColor(massage.status)}
+                                    color="white"
+                                    display="inline-block"
+                                >
+                                    {massage.status}
+                                </Box>
+                            </Table.Cell>
                             <Table.Cell>
                                 <button onClick={() => openEditModal(massage)}>
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -112,30 +135,57 @@ const MassageTable = ({ massages, setMassages }) => {
 
             {/* Edit Massage Modal */}
             {isOpen && selectedMassage && (
-                <Box
-                    position="fixed"
-                    top="50%"
-                    left="50%"
-                    transform="translate(-50%, -50%)"
-                    bg="grey"
-                    p={6}
-                    boxShadow="lg"
-                    borderRadius="md"
-                    width="300px"
-                >
-                    <h2>Edit Massage</h2>
-                    <Input name="name" value={selectedMassage.name} onChange={handleEditChange} placeholder="Name" mb={2} />
-                    <Input name="description" value={selectedMassage.description} onChange={handleEditChange} placeholder="Description" mb={2} />
-                    <select name="status" value={selectedMassage.status} onChange={handleEditChange} mb={2}>
-                        <option>Active</option>
-                        <option>Inactive</option>
-                    </select>
-                    <Button onClick={saveChanges} colorScheme="blue" mr={2}>Save</Button>
-                    <Button onClick={() => setIsOpen(false)}>Cancel</Button>
-                </Box>
+                <div className="modal" style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 1000 }}>
+                    <div className="modal-content" style={{ backgroundColor: "#FFFFFF", padding: "20px", borderRadius: "8px", boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)" }}>
+                        <h2 style={{ color: "#333333" }}>Edit Massage</h2>
+
+                        <Input
+                            name="name"
+                            value={selectedMassage.name}
+                            onChange={handleEditChange}
+                            placeholder="Name"
+                            mb={2}
+                            style={{ width: "100%", padding: "8px", marginBottom: "10px", backgroundColor: "#E9ECEF", border: "1px solid #CED4DA", color: "#333333" }}
+                        />
+
+                        <Input
+                            name="description"
+                            value={selectedMassage.description}
+                            onChange={handleEditChange}
+                            placeholder="Description"
+                            mb={2}
+                            style={{ width: "100%", padding: "8px", marginBottom: "10px", backgroundColor: "#E9ECEF", border: "1px solid #CED4DA", color: "#333333" }}
+                        />
+
+                        <select
+                            name="status"
+                            value={selectedMassage.status}
+                            onChange={handleEditChange}
+                            mb={2}
+                            style={{ width: "100%", padding: "8px", marginBottom: "10px", backgroundColor: "#E9ECEF", border: "1px solid #CED4DA", color: "#333333" }}
+                        >
+                            <option>Active</option>
+                            <option>Inactive</option>
+                        </select>
+
+                        <Button
+                            onClick={saveChanges}
+                            style={{ backgroundColor: "#007BFF", color: "#FFFFFF", marginRight: "10px", padding: "8px 16px", borderRadius: "4px" }}
+                            _hover={{ backgroundColor: "#0056B3" }}
+                        >
+                            Save
+                        </Button>
+
+                        <Button
+                            onClick={() => setIsOpen(false)}
+                            style={{ backgroundColor: "#CED4DA", color: "#333333", padding: "8px 16px", borderRadius: "4px" }}
+                        >
+                            Cancel
+                        </Button>
+                    </div>
+                </div>
             )}
         </Box>
     );
 };
-
 export default MassageTable;

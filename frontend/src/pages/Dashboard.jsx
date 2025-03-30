@@ -16,6 +16,7 @@ const AdminDashboard = () => {
         const fetchDashboardData = async () => {
             try {
                 const response = await fetch(`https://subscription-management-software.onrender.com/api/dashboard`); // Adjust API route as needed
+
                 const data = await response.json();
                 setDashboardData(data);
             } catch (error) {

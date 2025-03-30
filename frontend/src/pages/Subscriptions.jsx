@@ -12,8 +12,9 @@ const Subscriptions = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const newSubscription = location.state?.newSubscription; // Received new subscription data
-    const API_URL = import.meta.env.VITE_BACKEND_URL;
+
     const debouncedSearch = useDebounce(searchQuery, 500); // Debounce API calls
+    const API_URL = import.meta.env.VITE_BACKEND_URL;
 
     // Function to fetch subscriptions
     const fetchSubscriptions = async () => {
@@ -23,6 +24,7 @@ const Subscriptions = () => {
 
             if (debouncedSearch.trim()) {
                 url = `https://subscription-management-software.onrender.com/api/subscriptions/search?query=${encodeURIComponent(debouncedSearch)}`;
+
             }
 
             const response = await fetch(url);
@@ -80,7 +82,7 @@ const Subscriptions = () => {
 
             {/* Subscription Table */}
             {!loading && !error && (
-                <Box p={3} borderRadius="md">
+                <Box p={3} borderRadius="md" bg="white" shadow="sm">
                     <SubscriptionTable subscriptions={subscriptions} setSubscriptions={setSubscriptions} />
                 </Box>
             )}

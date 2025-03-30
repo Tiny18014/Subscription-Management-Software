@@ -1,14 +1,32 @@
 import express from "express";
 import Invoice from "../models/Invoice.js";
 import Customer from "../models/Customer.js";
+import Massage from "../models/Massage.js";
 import mongoose from "mongoose";
 const router = express.Router();
 
 router.get("/", async (req, res) => {
     try {
-        const invoices = await Invoice.find().populate("customer", "name"); // Fetch customer nam
+        const { status, paymentMode, dateFrom, dateTo } = req.query;
+
+        let query = {};
+
+        // Filtering conditions
+        if (status && status !== "all") query.status = status;
+        if (paymentMode && paymentMode !== "all") query.modeOfPayment = paymentMode;
+        if (dateFrom || dateTo) {
+            query.serviceDate = {};
+            if (dateFrom) query.serviceDate.$gte = new Date(dateFrom);
+            if (dateTo) query.serviceDate.$lte = new Date(dateTo);
+        }
+
+        const invoices = await Invoice.find(query)
+            .populate("customer", "name") // Fetch only customer name
+            .exec();
+
         res.status(200).json({ success: true, invoices });
     } catch (error) {
+        console.error("Error fetching invoices:", error);
         res.status(500).json({ success: false, message: "Error fetching invoices", error });
     }
 });
