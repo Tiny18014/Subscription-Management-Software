@@ -7,7 +7,8 @@ const InvoicesTable = ({ invoices, setInvoices }) => {
     const [isOpen, setIsOpen] = useState(false);
     const API_URL = import.meta.env.VITE_BACKEND_URL;
 
-    // Delete invoice
+    // Modified deleteInvoice function with additional logging
+    // Modified deleteInvoice function with token verification
     const deleteInvoice = async (id) => {
         try {
             const token = localStorage.getItem("token");
@@ -16,14 +17,19 @@ const InvoicesTable = ({ invoices, setInvoices }) => {
                 return;
             }
 
-            await axios.delete(`${API_URL}/api/invoices/${id}`, {
+            console.log(`Deleting invoice with ID: ${id}`);
 
+            await axios.delete(`${API_URL}/api/invoices/${id}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-
+            console.log("Invoice deleted successfully.");
             setInvoices((prev) => prev.filter((invoice) => invoice._id !== id));
         } catch (error) {
             console.error("Error deleting invoice:", error);
+            if (error.response) {
+                console.error("Status code:", error.response.status);
+                console.error("Response data:", error.response.data);
+            }
         }
     };
 
@@ -39,7 +45,7 @@ const InvoicesTable = ({ invoices, setInvoices }) => {
         setSelectedInvoice((prev) => ({ ...prev, [name]: value }));
     };
 
-    // Save changes
+    // Save changes function
     const saveChanges = async () => {
         try {
             const token = localStorage.getItem("token");
@@ -48,14 +54,9 @@ const InvoicesTable = ({ invoices, setInvoices }) => {
                 return;
             }
 
-            await axios.put(
-                `${API_URL}/api/invoices/update/${selectedInvoice._id}`,
-
-                selectedInvoice,
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
-            );
+            await axios.put(`${API_URL}/api/invoices/update/${selectedInvoice._id}`, selectedInvoice, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
 
             setInvoices((prev) =>
                 prev.map((inv) => (inv._id === selectedInvoice._id ? selectedInvoice : inv))
@@ -213,17 +214,13 @@ const InvoicesTable = ({ invoices, setInvoices }) => {
                             style={{ width: "100%", padding: "8px", marginBottom: "10px", backgroundColor: "#E9ECEF", border: "1px solid #CED4DA", color: "#333333" }}
                         />
 
-                        <select
-                            name="modeOfPayment"
-                            value={selectedInvoice.modeOfPayment}
-                            onChange={handleEditChange}
-                            mb={2}
-                            style={{ width: "100%", padding: "8px", marginBottom: "10px", backgroundColor: "#E9ECEF", border: "1px solid #CED4DA", color: "#333333" }}
-                        >
+                        <select name="modeOfPayment" value={selectedInvoice.modeOfPayment} onChange={handleEditChange}>
                             <option value="Cash">Cash</option>
                             <option value="Card">Card</option>
                             <option value="UPI">UPI</option>
+                            <option value="Subscription">Subscription</option>
                         </select>
+
 
                         <select
                             name="status"

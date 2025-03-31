@@ -2,6 +2,7 @@ import express from "express";
 import Invoice from "../models/Invoice.js";
 import Customer from "../models/Customer.js";
 import Massage from "../models/Massage.js";
+import authMiddleware from "../middleware/authMiddleware.js";
 import mongoose from "mongoose";
 const router = express.Router();
 
@@ -65,37 +66,61 @@ router.post("/add", async (req, res) => {
 
 
 
-router.delete("/invoices/:invoiceId", async (req, res) => {
+// DELETE an invoice (Soft Delete)
+router.delete("/:invoiceId", async (req, res) => {
     try {
         const { invoiceId } = req.params;
+        console.log("Received DELETE request for invoice ID:", invoiceId);
+
+        if (!invoiceId.match(/^[0-9a-fA-F]{24}$/)) {
+            console.log("Invalid ObjectId format");
+            return res.status(400).json({ success: false, message: "Invalid invoice ID" });
+        }
 
         const invoice = await Invoice.findById(invoiceId);
-        if (!invoice) return res.status(404).json({ success: false, message: "Invoice not found" });
+        if (!invoice) {
+            console.log("Invoice not found in database");
+            return res.status(404).json({ success: false, message: "Invoice not found" });
+        }
 
-        // Refund hours to the customer when an invoice is deleted
         const customer = await Customer.findById(invoice.customer);
         if (customer) {
-            customer.remainingHours += invoice.hoursUsed; // Restore hours
+            customer.remainingHours += invoice.hoursUsed;
             await customer.save();
         }
 
         await Invoice.findByIdAndDelete(invoiceId);
+        console.log("Invoice deleted successfully");
 
         res.status(200).json({ success: true, message: "Invoice deleted & hours restored" });
     } catch (error) {
+        console.error("Error deleting invoice:", error);
         res.status(500).json({ success: false, message: "Error deleting invoice", error });
     }
 });
 
-router.put("/update/:id", async (req, res) => {
+// UPDATE an invoice
+router.put("/update/:id", authMiddleware, async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: "Invalid invoice ID" });
+        }
+        const customer = await Customer.findById(existingInvoice.customer);
+        if (customer) {
+            customer.remainingHours += existingInvoice.hoursUsed; // Restore old hours
+            customer.remainingHours -= req.body.hoursUsed; // Deduct new hours
+            await customer.save();
+        }
+
         const updatedInvoice = await Invoice.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!updatedInvoice) return res.status(404).json({ message: "Invoice not found" });
+
         res.status(200).json(updatedInvoice);
     } catch (error) {
         res.status(500).json({ message: "Error updating Invoice", error });
     }
 });
+
 
 router.get("/search", async (req, res) => {
     try {
