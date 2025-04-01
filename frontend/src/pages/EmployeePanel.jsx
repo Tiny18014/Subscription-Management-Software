@@ -192,20 +192,39 @@ export default function CustomerPanel() {
         }
 
         try {
-            await axios.put(`${API_URL}/api/customers/renew/${renewCustomer._id}`, {
-
-                subscriptionId: selectedSubscription, // Send only subscriptionId in body
+            // Make API call to renew subscription
+            const response = await axios.put(`${API_URL}/api/customers/renew/${renewCustomer._id}`, {
+                subscriptionId: selectedSubscription // Send only subscriptionId in body
             });
 
-            fetchCustomers(); // Refresh the customer list after renewal
-            toaster.create({
-                description: "Subscription renewed successfully",
-                type: "success",
-            });
-
-            closeRenewModal();
+            // Check if the API call was successful
+            if (response.data.success) {
+                fetchCustomers(); // Refresh the customer list after renewal
+                toaster.create({
+                    description: "Subscription renewed successfully",
+                    type: "success",
+                });
+                closeRenewModal();
+            } else {
+                // Handle API success: false response
+                toaster.create({
+                    description: response.data.message || "Failed to renew subscription",
+                    type: "error",
+                });
+            }
         } catch (error) {
-            console.error("Error renewing subscription:", error);
+            // Enhanced error logging
+            console.error("Error details:", {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            });
+
+            // Show error message to user
+            toaster.create({
+                description: error.response?.data?.message || "Error renewing subscription. Please try again.",
+                type: "error",
+            });
         }
     };
 

@@ -185,5 +185,8 @@ router.post("/invoices", async (req, res) => {
     }
 });
 
-
+router.get("/invoice-schema-info", (req, res) => {
+    const statusEnum = Invoice.schema.path('status').enumValues;
+    res.json({ statusEnum });
+});
 export default router;

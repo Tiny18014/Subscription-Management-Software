@@ -142,6 +142,14 @@ router.put("/renew/:customerId", async (req, res) => {
 
         console.log("Incoming Request:", { customerId, subscriptionId }); // Debugging
 
+        // Validate inputs
+        if (!customerId || !subscriptionId) {
+            return res.status(400).json({
+                success: false,
+                message: "Customer ID and Subscription ID are required"
+            });
+        }
+
         const customer = await Customer.findById(customerId);
         const subscription = await Subscription.findById(subscriptionId);
 
@@ -157,30 +165,58 @@ router.put("/renew/:customerId", async (req, res) => {
 
         // Update customer's subscription and reset remaining hours
         customer.subscription = subscriptionId;
-        customer.remainingHours = subscription.validityHours;
+        customer.remainingHours += subscription.validityHours;
         customer.status = "Active";
         await customer.save();
 
-        // Create a new invoice for the renewal
+        // Create a new invoice for the renewal with exact enum values
         const invoice = new Invoice({
             customer: customerId,
-            serviceType: subscription.name,
-            hoursUsed: subscription.validityHours,
+            serviceType: subscription.name || "Subscription Service",
+            hoursUsed: subscription.validityHours || 0,
             modeOfPayment: "Subscription",
-            paidAmount: subscription.price,
-            status: "Paid",
+            paidAmount: subscription.price || 0,
+            // Make sure this matches EXACTLY one of your enum values
+            status: "paid", // Try lowercase if the enum includes 'paid' 
             serviceDate: new Date(),
+            subscriptionId: subscriptionId
         });
 
-        await invoice.save();
+        // Log the invoice before saving to debug
+        console.log("Invoice to be created:", JSON.stringify(invoice, null, 2));
 
-        res.status(200).json({ success: true, message: "Subscription renewed and invoice generated", invoice });
+        try {
+            await invoice.save();
+        } catch (invoiceError) {
+            console.error("Invoice creation error:", invoiceError);
+            // Continue even if invoice creation fails
+            // Revert customer changes if needed
+            // customer.subscription = previousSubscription;
+            // customer.remainingHours -= subscription.validityHours;
+            // await customer.save();
+
+            return res.status(500).json({
+                success: false,
+                message: "Error creating invoice",
+                error: invoiceError.message
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Subscription renewed and invoice generated",
+            customer: {
+                id: customer._id,
+                name: customer.name,
+                remainingHours: customer.remainingHours,
+                status: customer.status
+            }
+        });
     } catch (error) {
-        console.error("Error:", error);
+        console.error("Renewal error:", error);
         res.status(500).json({ success: false, message: "Server error", error: error.message });
     }
 });
-
 
 
 export default router;

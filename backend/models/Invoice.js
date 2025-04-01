@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const invoiceSchema = new mongoose.Schema({
     // Basic invoice information
-    invoiceNumber: { type: String, unique: true }, // Consider auto-generating this
+    invoiceNumber: { type: String, unique: true }, // Auto-generated
     customer: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true },
 
     // Service details
@@ -23,6 +23,9 @@ const invoiceSchema = new mongoose.Schema({
         required: true,
         enum: ["Cash", "Card", "UPI", "Subscription", "Bank Transfer", "Cheque"]
     },
+
+    // IMPORTANT: Make sure the status values are all consistent in case
+    // Choose either all lowercase OR first letter capitalized, not both mixed
     status: {
         type: String,
         enum: ['paid', 'pending', 'partially_paid', 'cancelled', 'refunded'],
