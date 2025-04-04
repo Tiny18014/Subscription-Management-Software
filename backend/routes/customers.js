@@ -70,7 +70,9 @@ router.post("/", async (req, res) => {
         // Create invoice entry
         const newInvoice = new Invoice({
             customer: newCustomer._id,
-            serviceType: selectedSub.name,  // Subscription plan name
+            serviceType: selectedSub.name,
+            customerName: name,
+            // Subscription plan name
             hoursUsed: selectedSub.validityHours,  // Total hours from subscription
             modeOfPayment: "Subscription",
             paidAmount: selectedSub.price, // Store the subscription price
