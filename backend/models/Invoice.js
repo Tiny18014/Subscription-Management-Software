@@ -4,7 +4,7 @@ const invoiceSchema = new mongoose.Schema({
     invoiceNumber: { type: String, unique: true },
 
     // Store basic customer details instead of a reference
-    customerId: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true },
+    customer: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true },
     customerName: { type: String, required: true }, // Store the name separately
 
     // Store service details instead of referencing a massage service
