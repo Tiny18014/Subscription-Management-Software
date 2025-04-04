@@ -1,14 +1,28 @@
 import { useState, useEffect } from "react";
-import { Table, Button, Box, IconButton, Text } from "@chakra-ui/react";
-
+import { Table, Button, Box, Text } from "@chakra-ui/react";
 import axios from "axios";
 
 const CustomerTable = ({ customers, setCustomers }) => {
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [isOpen, setIsOpen] = useState(false);
-
+    const [subscriptions, setSubscriptions] = useState([]); // Initialize as empty array
     const API_URL = import.meta.env.VITE_BACKEND_URL;
 
+    // Fetch subscriptions when component mounts
+    useEffect(() => {
+        const fetchSubscriptions = async () => {
+            try {
+                const response = await axios.get(`${API_URL}/api/subscriptions`);
+                // Ensure we're setting an array
+                setSubscriptions(Array.isArray(response.data) ? response.data : []);
+            } catch (error) {
+                console.error('Error fetching subscriptions:', error);
+                setSubscriptions([]); // Reset to empty array on error
+            }
+        };
+
+        fetchSubscriptions();
+    }, [API_URL]);
 
     const deleteCustomer = async (id) => {
         try {
@@ -19,7 +33,6 @@ const CustomerTable = ({ customers, setCustomers }) => {
             }
 
             await axios.delete(`${API_URL}/api/customers/delete/${id}`, {
-
                 headers: {
                     Authorization: `Bearer ${token}`, // Send token in Authorization header
                 },
@@ -31,15 +44,27 @@ const CustomerTable = ({ customers, setCustomers }) => {
         }
     };
 
-
     const openEditModal = (customer) => {
-        setSelectedCustomer(customer);
+        setSelectedCustomer({
+            ...customer,
+            subscriptionId: customer.subscription?._id // Set subscriptionId from subscription's _id
+        });
         setIsOpen(true);
     };
 
     const handleEditChange = (e) => {
         const { name, value } = e.target;
-        setSelectedCustomer((prev) => ({ ...prev, [name]: value }));
+
+        if (name === "subscription") {
+            const selectedSubscription = subscriptions.find(sub => sub._id === value);
+            setSelectedCustomer(prev => ({
+                ...prev,
+                subscriptionId: value,
+                subscription: selectedSubscription
+            }));
+        } else {
+            setSelectedCustomer(prev => ({ ...prev, [name]: value }));
+        }
     };
 
     const saveChanges = async () => {
@@ -50,10 +75,14 @@ const CustomerTable = ({ customers, setCustomers }) => {
                 return;
             }
 
+            const updatedCustomer = {
+                ...selectedCustomer,
+                subscription: selectedCustomer.subscriptionId // Make sure subscription ID is sent correctly
+            };
+
             await axios.put(
                 `${API_URL}/api/customers/update/${selectedCustomer._id}`,
-
-                selectedCustomer,
+                updatedCustomer,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`, // Send token in headers
@@ -61,8 +90,8 @@ const CustomerTable = ({ customers, setCustomers }) => {
                 }
             );
 
-            setCustomers((prev) =>
-                prev.map((c) => (c._id === selectedCustomer._id ? selectedCustomer : c))
+            setCustomers(prev =>
+                prev.map(c => (c._id === selectedCustomer._id ? selectedCustomer : c))
             );
             setIsOpen(false);
         } catch (error) {
@@ -80,20 +109,20 @@ const CustomerTable = ({ customers, setCustomers }) => {
             minute: '2-digit'
         });
     };
+
     // Function to determine status color
     const getStatusColor = (status) => {
-        switch (status.toLowerCase()) {
-            case 'Active':
-                return "green.500";
+        switch (status?.toLowerCase()) {
             case 'active':
                 return "green.500";
             default:
                 return "gray.500";
         }
     };
+
     return (
-        <Box >
-            <Table.Root size="sm" striped >
+        <Box>
+            <Table.Root size="sm" striped>
                 <Table.Header>
                     <Table.Row>
                         <Table.ColumnHeader>ID</Table.ColumnHeader>
@@ -108,10 +137,9 @@ const CustomerTable = ({ customers, setCustomers }) => {
                 <Table.Body>
                     {customers.map((customer, index) => (
                         <Table.Row key={customer._id || `customer-${index}`}>
-
                             <Table.Cell>
                                 <Text title={`Customer ID: ${customer._id}`}>
-                                    CUS-{customer._id.substring(customer._id.length - 6).toUpperCase()}
+                                    CUS-{customer._id?.substring(customer._id.length - 6).toUpperCase()}
                                 </Text>
                             </Table.Cell>
                             <Table.Cell>
@@ -122,7 +150,8 @@ const CustomerTable = ({ customers, setCustomers }) => {
                             <Table.Cell>{customer.subscription?.name}</Table.Cell>
                             <Table.Cell>
                                 <Text title={formatDateTime(customer.createdAt)}>
-                                    {new Date(customer.createdAt).toLocaleDateString()}</Text>
+                                    {new Date(customer.createdAt).toLocaleDateString()}
+                                </Text>
                             </Table.Cell>
                             <Table.Cell>{customer.remainingHours}</Table.Cell>
                             <Table.Cell>
@@ -153,37 +182,49 @@ const CustomerTable = ({ customers, setCustomers }) => {
                         </Table.Row>
                     ))}
                 </Table.Body>
-
             </Table.Root>
 
-            {isOpen && (
+            {isOpen && selectedCustomer && (
                 <div className="modal" style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 1000 }}>
                     <div className="modal-content" style={{ backgroundColor: "#FFFFFF", padding: "20px", borderRadius: "8px", boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)" }}>
                         <h2 style={{ color: "#333333" }}>Edit Customer</h2>
                         <input
                             name="name"
-                            value={selectedCustomer.name}
+                            value={selectedCustomer.name || ""}
                             onChange={handleEditChange}
                             placeholder="Name"
                             style={{ width: "100%", padding: "8px", marginBottom: "10px", backgroundColor: "#E9ECEF", border: "1px solid #CED4DA", color: "#333333" }}
                         /><br />
-                        <input
-                            name="subscription"
-                            value={selectedCustomer.subscription?.name}
-                            onChange={handleEditChange}
-                            placeholder="Subscription"
-                            style={{ width: "100%", padding: "8px", marginBottom: "10px", backgroundColor: "#E9ECEF", border: "1px solid #CED4DA", color: "#333333" }}
-                        /><br />
+                        <div style={{ marginBottom: "10px" }}>
+                            <label htmlFor="subscription" style={{ display: "block", marginBottom: "5px", color: "#333333", fontWeight: "500" }}>
+                                Subscription
+                            </label>
+                            <select
+                                id="subscription"
+                                name="subscription"
+                                value={selectedCustomer.subscriptionId || ""}
+                                onChange={handleEditChange}
+                                style={{ width: "100%", padding: "8px", backgroundColor: "#E9ECEF", border: "1px solid #CED4DA", color: "#333333" }}
+                            >
+                                <option value="">Select Subscription</option>
+                                {/* Added check to ensure subscriptions is an array before mapping */}
+                                {Array.isArray(subscriptions) && subscriptions.map(sub => (
+                                    <option key={sub._id} value={sub._id}>
+                                        {sub.name} {sub.price && `- $${sub.price}/month`}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                         <input
                             name="createdAt"
-                            value={selectedCustomer.createdAt}
+                            value={selectedCustomer.createdAt || ""}
                             onChange={handleEditChange}
                             placeholder="Created At"
                             style={{ width: "100%", padding: "8px", marginBottom: "10px", backgroundColor: "#E9ECEF", border: "1px solid #CED4DA", color: "#333333" }}
                         /><br />
                         <select
                             name="status"
-                            value={selectedCustomer.status}
+                            value={selectedCustomer.status || ""}
                             onChange={handleEditChange}
                             style={{ width: "100%", padding: "8px", marginBottom: "10px", backgroundColor: "#E9ECEF", border: "1px solid #CED4DA", color: "#333333" }}
                         >
