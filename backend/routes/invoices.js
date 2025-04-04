@@ -45,9 +45,15 @@ router.post("/add", async (req, res) => {
         if (!mongoose.Types.ObjectId.isValid(customer)) {
             return res.status(400).json({ error: "Invalid customer ID" });
         }
+        // Retrieve customer details if the customer exists
+        let customerData = await Customer.findById(customer).select("name");
+
+        // Ensure customerName is set, even if the customer is deleted
+        const customerName = customerData ? customerData.name : req.body.customerName || "Deleted Customer";
 
         const newInvoice = new Invoice({
             customer: new mongoose.Types.ObjectId(customer),
+            customerName,
             serviceType,
             hoursUsed,
             serviceDate: new Date(serviceDate),  // Ensure date is properly formatted
