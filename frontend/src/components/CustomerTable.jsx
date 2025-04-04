@@ -8,21 +8,21 @@ const CustomerTable = ({ customers, setCustomers }) => {
     const [subscriptions, setSubscriptions] = useState([]); // Initialize as empty array
     const API_URL = import.meta.env.VITE_BACKEND_URL;
 
-    // Fetch subscriptions when component mounts
     useEffect(() => {
-        const fetchSubscriptions = async () => {
-            try {
-                const response = await axios.get(`${API_URL}/api/subscriptions`);
-                // Ensure we're setting an array
-                setSubscriptions(Array.isArray(response.data) ? response.data : []);
-            } catch (error) {
-                console.error('Error fetching subscriptions:', error);
-                setSubscriptions([]); // Reset to empty array on error
-            }
-        };
+        axios.get(`${API_URL}/api/subscriptions`)
 
-        fetchSubscriptions();
-    }, [API_URL]);
+            .then((response) => {
+                console.log("API Response:", response.data);
+                if (response.data && Array.isArray(response.data)) {
+                    setSubscriptions(response.data);
+                } else if (response.data.subscriptions) {
+                    setSubscriptions(response.data.subscriptions);
+                } else {
+                    console.error("Unexpected API response format:", response.data);
+                }
+            })
+            .catch((error) => console.error("Error fetching subscriptions:", error));
+    }, []);
 
     const deleteCustomer = async (id) => {
         try {
@@ -207,12 +207,12 @@ const CustomerTable = ({ customers, setCustomers }) => {
                                 style={{ width: "100%", padding: "8px", backgroundColor: "#E9ECEF", border: "1px solid #CED4DA", color: "#333333" }}
                             >
                                 <option value="">Select Subscription</option>
-                                {/* Added check to ensure subscriptions is an array before mapping */}
-                                {Array.isArray(subscriptions) && subscriptions.map(sub => (
-                                    <option key={sub._id} value={sub._id}>
-                                        {sub.name} {sub.price && `- $${sub.price}/month`}
-                                    </option>
-                                ))}
+                                {subscriptions
+                                    .filter(sub => sub.status.toLowerCase() === "active") // Filter only active subscriptions
+                                    .map(sub => (
+                                        <option key={sub._id} value={sub._id}>{sub.name}</option>
+                                    ))
+                                }
                             </select>
                         </div>
                         <input
