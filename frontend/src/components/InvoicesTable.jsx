@@ -140,7 +140,7 @@ const InvoicesTable = ({ invoices, setInvoices }) => {
                             </Table.Cell>
                             <Table.Cell>
                                 <Text fontWeight="medium" title={inv.customer?._id || "Customer ID unavailable"}>
-                                    {inv.customer?.name || "Unknown Customer"}
+                                    {inv.customerName || "Unknown Customer"}
                                 </Text>
                             </Table.Cell>
                             <Table.Cell>{inv.serviceType}</Table.Cell>
