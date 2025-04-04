@@ -160,11 +160,12 @@ export default function CustomerPanel() {
                 const serviceName = selectedService ? selectedService.name : "Unknown Service";
 
                 await axios.post(`${API_URL}/api/invoices/add`, {
-
                     customer: selectedCustomer._id,
-                    serviceType: serviceName,
+                    customerName: selectedCustomer.name, // Store name
+                    serviceType: selectedService ? selectedService.name : "Unknown Service",
+                    servicePrice: selectedService ? selectedService.price : 0, // Store price
                     hoursUsed: hours,
-                    serviceDate: serviceDate,
+                    serviceDate: new Date().toISOString(),
                     modeOfPayment: "Subscription",
                     status: "paid",
                     paidAmount: 0,

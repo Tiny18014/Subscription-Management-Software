@@ -171,16 +171,22 @@ router.put("/renew/:customerId", async (req, res) => {
 
         // Create a new invoice for the renewal with exact enum values
         const invoice = new Invoice({
-            customer: customerId,
+            customerId: customer._id,
+            customerName: customer.name, // Store customer name permanently
+
             serviceType: subscription.name || "Subscription Service",
+            servicePrice: subscription.price || 0, // Store subscription price
+            subscriptionId: subscriptionId,
+            subscriptionName: subscription.name, // Keep subscription details
+            subscriptionPrice: subscription.price,
+
             hoursUsed: subscription.validityHours || 0,
             modeOfPayment: "Subscription",
             paidAmount: subscription.price || 0,
-            // Make sure this matches EXACTLY one of your enum values
-            status: "paid", // Try lowercase if the enum includes 'paid' 
+            status: "paid",
             serviceDate: new Date(),
-            subscriptionId: subscriptionId
         });
+
 
         // Log the invoice before saving to debug
         console.log("Invoice to be created:", JSON.stringify(invoice, null, 2));

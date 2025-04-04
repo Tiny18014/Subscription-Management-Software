@@ -1,45 +1,33 @@
 import mongoose from "mongoose";
 
 const invoiceSchema = new mongoose.Schema({
-    // Basic invoice information
-    invoiceNumber: { type: String, unique: true }, // Auto-generated
-    customer: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true },
+    invoiceNumber: { type: String, unique: true },
 
-    // Service details
+    // Store basic customer details instead of a reference
+    customerId: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true },
+    customerName: { type: String, required: true }, // Store the name separately
+
+    // Store service details instead of referencing a massage service
     serviceType: { type: String, required: true },
+    servicePrice: { type: Number, default: 0 }, // Store service price
+
     hoursUsed: { type: Number, required: true },
     serviceDate: { type: Date, default: Date.now },
 
-    // Financial information
+    // Store subscription details separately
+    subscriptionId: { type: mongoose.Schema.Types.ObjectId, ref: "Subscription" },
+    subscriptionName: { type: String }, // Keep subscription name
+    subscriptionPrice: { type: Number }, // Keep subscription price
+
+    // Payment details
     paidAmount: { type: Number, default: 0 },
     taxAmount: { type: Number, default: 0 },
-    cgst: { type: Number, default: function () { return this.paidAmount * 0.09; } },
-    sgst: { type: Number, default: function () { return this.paidAmount * 0.09; } },
-    netAmount: { type: Number, default: function () { return this.paidAmount - this.taxAmount; } },
+    modeOfPayment: { type: String, required: true, enum: ["Cash", "Card", "UPI", "Subscription", "Bank Transfer", "Cheque"] },
+    status: { type: String, enum: ['paid', 'pending', 'partially_paid', 'cancelled', 'refunded'], required: true, default: 'pending' },
 
-    // Payment information
-    modeOfPayment: {
-        type: String,
-        required: true,
-        enum: ["Cash", "Card", "UPI", "Subscription", "Bank Transfer", "Cheque"]
-    },
-
-    // IMPORTANT: Make sure the status values are all consistent in case
-    // Choose either all lowercase OR first letter capitalized, not both mixed
-    status: {
-        type: String,
-        enum: ['paid', 'pending', 'partially_paid', 'cancelled', 'refunded'],
-        required: true,
-        default: 'pending'
-    },
-
-    // For subscription-related invoices
-    subscriptionId: { type: mongoose.Schema.Types.ObjectId, ref: "Subscription" },
-
-    // Additional information
-    notes: { type: String },
-    createdBy: { type: String }, // Track which employee created the invoice
+    createdBy: { type: String },
 }, { timestamps: true });
+
 
 // Auto-generate invoice number before saving
 invoiceSchema.pre('save', async function (next) {

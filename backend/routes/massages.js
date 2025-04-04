@@ -61,11 +61,19 @@ router.delete("/:id", async (req, res) => {
     try {
         const deletedMassage = await Massage.findByIdAndDelete(req.params.id);
         if (!deletedMassage) return res.status(404).json({ message: "Massage not found" });
-        res.status(200).json({ message: "Massage deleted successfully" });
+
+        // Update invoices to mark the deleted massage
+        await Invoice.updateMany(
+            { serviceType: deletedMassage.name },
+            { $set: { serviceType: `${deletedMassage.name} (Deleted)` } }
+        );
+
+        res.status(200).json({ message: "Massage deleted successfully, invoices retained." });
     } catch (error) {
         res.status(500).json({ message: "Error deleting massage", error });
     }
 });
+
 
 
 

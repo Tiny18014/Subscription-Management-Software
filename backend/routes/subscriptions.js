@@ -53,17 +53,23 @@ router.delete("/delete/:id", authMiddleware, async (req, res) => {
         console.log("Received DELETE request for ID:", id); // Debugging log
 
         const deletedSubscription = await Subscription.findByIdAndDelete(id);
-
         if (!deletedSubscription) {
             return res.status(404).json({ success: false, message: "Subscription not found" });
         }
 
-        res.status(200).json({ success: true, message: "Subscription deleted successfully" });
+        // Remove subscription reference in invoices but keep the invoices
+        await Invoice.updateMany(
+            { subscription: id },
+            { $unset: { subscription: "" } } // Removes the subscription reference
+        );
+
+        res.status(200).json({ success: true, message: "Subscription deleted successfully, invoices retained." });
     } catch (error) {
         console.error("Error deleting subscription:", error);
         res.status(500).json({ success: false, message: "Internal server error", error: error.message });
     }
 });
+
 
 
 router.get("/search", async (req, res) => {
