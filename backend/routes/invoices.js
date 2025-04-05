@@ -153,6 +153,14 @@ router.get("/search", async (req, res) => {
             }
         });
 
+        // Search by last characters of invoice ObjectId (after "INV-" part)
+        if (query.startsWith("INV-") && query.length > 4) {
+            const suffix = query.slice(4).toLowerCase(); // Get part after "INV-"
+            searchConditions.push({
+                _id: { $regex: new RegExp(suffix + "$", "i") }
+            });
+        }
+
         // Find invoices based on conditions
         const invoices = await Invoice.find({ $or: searchConditions })
             .populate("customer", "name") // Populate only the `name` field
