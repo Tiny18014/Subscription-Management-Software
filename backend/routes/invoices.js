@@ -128,7 +128,6 @@ router.put("/update/:id", authMiddleware, async (req, res) => {
 });
 
 
-const mongoose = require("mongoose");
 
 router.get("/search", async (req, res) => {
     try {
