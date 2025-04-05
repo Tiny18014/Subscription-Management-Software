@@ -128,6 +128,8 @@ router.put("/update/:id", authMiddleware, async (req, res) => {
 });
 
 
+const mongoose = require("mongoose");
+
 router.get("/search", async (req, res) => {
     try {
         const { query } = req.query;
@@ -136,46 +138,64 @@ router.get("/search", async (req, res) => {
             return res.status(400).json({ success: false, message: "Search query is required" });
         }
 
-        // Define search conditions
         const searchConditions = [];
 
-        // If query is a number, search by `paidAmount`
+        // 1. Search by paidAmount if query is numeric
         if (!isNaN(query)) {
             searchConditions.push({ paidAmount: Number(query) });
         }
 
-        // Search by customer name using regex (case-insensitive)
-        searchConditions.push({
-            customer: {
-                $in: await Customer.find({
-                    name: { $regex: query, $options: "i" } // Case-insensitive search
-                }).distinct("_id")
-            }
-        });
+        // 2. Search by populated customer name (via customer reference)
+        const customerIds = await Customer.find({
+            name: { $regex: query, $options: "i" }
+        }).distinct("_id");
 
-        // Search by last characters of invoice ObjectId (after "INV-" part)
-        if (query.startsWith("INV-") && query.length > 4) {
-            const suffix = query.slice(4).toLowerCase(); // Get part after "INV-"
-            searchConditions.push({
-                _id: { $regex: new RegExp(suffix + "$", "i") }
-            });
+        if (customerIds.length > 0) {
+            searchConditions.push({ customer: { $in: customerIds } });
         }
 
-        // Find invoices based on conditions
-        const invoices = await Invoice.find({ $or: searchConditions })
-            .populate("customer", "name") // Populate only the `name` field
-            .exec();
-        console.log("Query:", query);
-        console.log("Matching customer IDs:", await Customer.find({ name: { $regex: query, $options: "i" } }).distinct("_id"));
-        console.log("Invoices found:", invoices);
+        // 3. Search by customerName stored directly on invoice (for deleted customers)
+        searchConditions.push({
+            customerName: { $regex: query, $options: "i" }
+        });
 
+        // 4. Search by invoice ID suffix (after "INV-")
+        if (query.startsWith("INV-") && query.length > 4) {
+            const suffix = query.slice(4).toLowerCase();
+
+            // Use aggregation to match stringified ObjectId
+            const matchingInvoices = await Invoice.aggregate([
+                {
+                    $addFields: {
+                        stringId: { $toString: "$_id" }
+                    }
+                },
+                {
+                    $match: {
+                        stringId: { $regex: suffix + "$", $options: "i" }
+                    }
+                }
+            ]);
+
+            // Extract matched ObjectIds
+            const matchedIds = matchingInvoices.map(inv => inv._id);
+            if (matchedIds.length > 0) {
+                searchConditions.push({ _id: { $in: matchedIds } });
+            }
+        }
+
+        // Combine and search
+        const invoices = await Invoice.find({ $or: searchConditions })
+            .populate("customer", "name")
+            .exec();
 
         res.status(200).json({ success: true, invoices });
     } catch (error) {
-        console.error("Error searching invoices:", error.message);
+        console.error("Error searching invoices:", error);
         res.status(500).json({ success: false, message: "Internal Server Error" });
     }
 });
+
 
 
 // Create invoice when a service is used
