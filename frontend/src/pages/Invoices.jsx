@@ -110,68 +110,106 @@ const Invoices = () => {
     const exportToExcel = async () => {
         try {
             setExporting(true);
+            console.log("Starting export with", invoices.length, "invoices");
 
-            if (invoices.length > 0) {
-                console.log("Sample invoice data:", JSON.stringify(invoices[0], null, 2));
-            }
+            // Process each invoice one by one with better error handling
+            const enrichedInvoices = [];
+            for (const invoice of invoices) {
+                try {
+                    // First, use the customerName directly from the invoice
+                    const customerName = invoice?.customerName || "N/A";
+                    let customerId = null;
 
-            // Fetch customer details for each invoice
-            const enrichedInvoices = await Promise.all(
-                invoices.map(async (invoice) => {
-                    try {
-                        // Ensure `customerId` is correctly extracted
-                        const customerId = typeof invoice.customer === "string" ? invoice.customer : invoice.customer?._id;
-
-                        if (!customerId) throw new Error("Invalid customer ID");
-
-                        // Fetch customer details
-                        const response = await axios.get(`${API_URL}/api/customers/${customerId}`);
-
-                        const customerData = response.data; // Axios automatically parses JSON
-
-                        return {
-                            ID: invoice?._id || "N/A",
-                            Name: customerData?.name || "Customer Not Found",
-                            Age: customerData?.age || "N/A",
-                            Phone: customerData?.phone || "N/A",
-                            "Subscription ID": customerData?.subscription || "N/A",
-                            Status: invoice?.status || "N/A",
-                            "Service Type": invoice?.serviceType || "N/A",
-                            "Hours Used": invoice?.hoursUsed || "N/A",
-                            "Paid Amount": invoice?.paidAmount || "N/A",
-                            "Mode of Payment": invoice?.modeOfPayment || "N/A",
-                            "Service Date": invoice?.serviceDate
-                                ? new Date(invoice.serviceDate).toLocaleString()
-                                : "N/A",
-                        };
-                    } catch (error) {
-                        console.error("❌ Error fetching customer details:", error);
-                        return {
-                            ID: invoice?._id || "N/A",
-                            Name: "Customer Not Found",
-                            Age: "N/A",
-                            Phone: "N/A",
-                            "Subscription ID": "N/A",
-                            Status: invoice?.status || "N/A",
-                            "Service Type": invoice?.serviceType || "N/A",
-                            "Hours Used": invoice?.hoursUsed || "N/A",
-                            "Paid Amount": invoice?.paidAmount || "N/A",
-                            "Mode of Payment": invoice?.modeOfPayment || "N/A",
-                            "Service Date": invoice?.serviceDate
-                                ? new Date(invoice.serviceDate).toLocaleString()
-                                : "N/A",
-                        };
+                    // Handle different possible structures of the customer field
+                    if (invoice.customer) {
+                        if (typeof invoice.customer === "string") {
+                            customerId = invoice.customer;
+                        } else if (invoice.customer._id) {
+                            customerId = invoice.customer._id;
+                        } else if (invoice.customer.toString) {
+                            customerId = invoice.customer.toString();
+                        }
                     }
-                })
-            );
+
+                    // Create base invoice data with ID fallback for invoice number
+                    const baseInvoiceData = {
+                        ID: invoice?._id || "N/A",
+                        Name: customerName,
+                        // Use invoice ID as fallback when invoice number is missing
+                        "Invoice Number": `INV-${(invoice?._id || '').slice(-6).toUpperCase()}` || "No Invoice #",
+                        Status: invoice?.status || "N/A",
+                        "Service Type": invoice?.serviceType || "N/A",
+                        "Hours Used": invoice?.hoursUsed || 0,
+                        "Paid Amount": formatCurrency(invoice?.paidAmount || 0),
+                        "Mode of Payment": invoice?.modeOfPayment || "N/A",
+                        "Service Date": invoice?.serviceDate
+                            ? new Date(invoice.serviceDate).toLocaleString()
+                            : "N/A",
+                        Age: "Customer No longer Exists",
+                        Phone: "Customer No longer Exists",
+                        "Subscription ID": "Customer No longer Exists"
+                    };
+
+                    // Only try to fetch customer if we have an ID
+                    if (customerId) {
+                        try {
+                            const response = await axios.get(`${API_URL}/api/customers/${customerId}`);
+                            const customerData = response.data;
+
+                            // Update customer fields if data exists
+                            if (customerData) {
+                                baseInvoiceData.Name = customerData.name || customerName;
+                                baseInvoiceData.Age = customerData.age?.toString() || "Customer No longer Exists";
+                                baseInvoiceData.Phone = customerData.phone || "Customer No longer Exists";
+                                baseInvoiceData["Subscription ID"] = customerData.subscription || "Customer No longer Exists";
+                            }
+                        } catch (customerError) {
+                            // Customer not found or other error - continue with existing data
+                            console.log(`Customer not found for invoice ${invoice?._id}, using available data`);
+                        }
+                    }
+
+                    enrichedInvoices.push(baseInvoiceData);
+
+                } catch (invoiceError) {
+                    console.error(`Failed to process invoice:`, invoiceError);
+                    // Add minimal data for failed invoice
+                    enrichedInvoices.push({
+                        ID: invoice?._id || "N/A",
+                        Name: invoice?.customerName || "Error Processing",
+                        "Invoice Number": invoice?.invoiceNumber || `INV-${invoice?._id?.substring(-6, -1)}` || "No Invoice #",
+                        Status: invoice?.status || "N/A",
+                        "Service Type": invoice?.serviceType || "N/A",
+                        "Hours Used": invoice?.hoursUsed || 0,
+                        "Paid Amount": formatCurrency(invoice?.paidAmount || 0),
+                        "Mode of Payment": invoice?.modeOfPayment || "N/A",
+                        "Service Date": invoice?.serviceDate
+                            ? new Date(invoice.serviceDate).toLocaleString()
+                            : "N/A",
+                        Age: "N/A",
+                        Phone: "N/A",
+                        "Subscription ID": "N/A"
+                    });
+                }
+            }
 
             // Create Excel sheet
             const ws = XLSX.utils.json_to_sheet(enrichedInvoices);
 
             // Set column widths for better readability
             ws["!cols"] = [
-                { wch: 25 }, { wch: 20 }, { wch: 10 }, { wch: 15 }, { wch: 25 },
-                { wch: 15 }, { wch: 20 }, { wch: 10 }, { wch: 15 }, { wch: 20 }, { wch: 20 },
+                { wch: 25 }, // ID
+                { wch: 20 }, // Name
+                { wch: 18 }, // Invoice Number
+                { wch: 15 }, // Status
+                { wch: 20 }, // Service Type
+                { wch: 10 }, // Hours Used
+                { wch: 15 }, // Paid Amount
+                { wch: 20 }, // Mode of Payment
+                { wch: 20 }, // Service Date
+                { wch: 10 }, // Age
+                { wch: 15 }, // Phone
+                { wch: 25 }, // Subscription ID
             ];
 
             // Create a new workbook and append the sheet
