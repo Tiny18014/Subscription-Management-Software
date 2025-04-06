@@ -1,6 +1,6 @@
 import { Box, VStack, Text, Icon, Image } from "@chakra-ui/react";
 import { NavLink } from "react-router-dom";
-import { FaHome, FaUsers, FaLayerGroup, FaFileInvoice } from "react-icons/fa";
+import { FaHome, FaUsers, FaLayerGroup, FaFileInvoice, FaUser } from "react-icons/fa";
 import { TbMassage } from "react-icons/tb";
 
 const Sidebar = () => {
@@ -13,14 +13,14 @@ const Sidebar = () => {
         {
             name: "Dashboard",
             path: role === "admin" ? "/dashboard" : "/customerdashboard",
-            icon: FaLayerGroup,
+            icon: FaHome,
             roles: ["admin"]
         },
 
         {
             name: "Customers",
             path: role === "admin" ? "/customers" : "/customerdashboard",
-            icon: FaLayerGroup,
+            icon: FaUsers,
             roles: ["admin", "employee"]
         },
 
@@ -33,13 +33,13 @@ const Sidebar = () => {
         {
             name: "Massages",
             path: role === "admin" ? "/massages" : "/massagesemployee",
-            icon: FaLayerGroup,
+            icon: TbMassage,
             roles: ["admin", "employee"]
         },
         {
             name: "Invoices",
             path: role === "admin" ? "/invoices" : "/invoicesemployee",
-            icon: FaLayerGroup,
+            icon: FaFileInvoice,
             roles: ["admin", "employee"]
         }
     ];
