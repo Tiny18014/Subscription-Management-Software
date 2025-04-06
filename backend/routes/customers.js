@@ -173,7 +173,7 @@ router.put("/renew/:customerId", async (req, res) => {
 
         // Create a new invoice for the renewal with exact enum values
         const invoice = new Invoice({
-            customerId: customer._id,
+            customer: customer._id,
             customerName: customer.name, // Store customer name permanently
 
             serviceType: subscription.name || "Subscription Service",
