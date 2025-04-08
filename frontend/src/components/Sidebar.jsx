@@ -46,8 +46,8 @@ const Sidebar = () => {
 
     return (
         <Box as="aside" w="250px" bg="#F4F4F4" color="#333333" height="100vh" position="fixed" p="4">
-            <Box display="flex" alignItems="center" justifyContent="center" mb="6" p="4">
-                <Image src="/Spa Logo.png" alt="Logo" boxSize="80px" />
+            <Box display="flex" alignItems="center" justifyContent="center" mb="6" >
+                <Image src="/Spa Logo.png" alt="Logo" boxSize="150px" />
             </Box>
 
             <VStack spacing="4" align="start">
